@@ -15,7 +15,7 @@ export default function AboutPage() {
         </div>
         <h1 className="text-4xl font-bold text-center mb-6">About Momollie</h1>
         <p className="text-xl text-gray-600 text-center max-w-3xl mx-auto">
-          We're passionate about providing high-quality products for your pets and babies,
+          We&apos;re passionate about providing high-quality products for your pets and babies,
           making your life easier and more enjoyable.
         </p>
       </section>
@@ -61,7 +61,7 @@ export default function AboutPage() {
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h3 className="text-xl font-bold mb-4">Customer Care</h3>
             <p className="text-gray-600">
-              Your satisfaction is our priority. We're here to help you find the perfect
+              Your satisfaction is our priority. We&apos;re here to help you find the perfect
               products for your needs.
             </p>
           </div>
