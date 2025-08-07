@@ -25,6 +25,9 @@ export default function Navbar() {
             <Link href="/blog" className="text-gray-600 hover:text-pink-600">
               Blog
             </Link>
+            <Link href="/momongo" className="text-gray-600 hover:text-pink-600">
+              Momongo
+            </Link>
             <Link href="/about" className="text-gray-600 hover:text-pink-600">
               About
             </Link>
@@ -83,6 +86,13 @@ export default function Navbar() {
               onClick={() => setIsMenuOpen(false)}
             >
               Blog
+            </Link>
+            <Link
+              href="/momongo"
+              className="block text-gray-600 hover:text-pink-600"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Momongo
             </Link>
             <Link
               href="/about"

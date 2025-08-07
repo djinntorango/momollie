@@ -73,6 +73,25 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Momongo App Preview */}
+      <section className="bg-purple-50 py-16">
+        <div className="container mx-auto px-4">
+          <div className="text-center max-w-3xl mx-auto">
+            <h2 className="text-3xl font-bold mb-6">Introducing Momongo</h2>
+            <p className="text-lg text-gray-600 mb-8">
+              Our AI-powered ecommerce automation platform helps you manage listings on Etsy and Amazon, 
+              while streamlining your supplier relationships on Alibaba.
+            </p>
+            <Link
+              href="/momongo"
+              className="bg-purple-600 text-white px-8 py-3 rounded-full hover:bg-purple-700 transition-colors inline-block"
+            >
+              Learn More About Momongo
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Blog Preview */}
       <section className="bg-gray-50 py-16">
         <div className="container mx-auto px-4">
