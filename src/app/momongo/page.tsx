@@ -9,14 +9,14 @@ export default function MomongoPage() {
             <h1 className="text-5xl md:text-6xl font-bold text-gray-800 mb-6">
               Meet Momongo
             </h1>
-            <p className="text-xl md:text-2xl text-gray-600 mb-8">
+            <p className="text-xl md:text-2xl text-gray-700 mb-8">
               The AI-powered ecommerce automation platform that streamlines your business across multiple marketplaces
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button className="bg-gray-400 text-white px-8 py-3 rounded-full cursor-not-allowed">
                 Coming Soon
               </button>
-              <button className="border-2 border-gray-400 text-gray-400 px-8 py-3 rounded-full cursor-not-allowed">
+              <button className="border-2 border-gray-500 text-gray-600 px-8 py-3 rounded-full cursor-not-allowed">
                 Join Waitlist - Coming Soon
               </button>
             </div>
@@ -38,7 +38,7 @@ export default function MomongoPage() {
                 </svg>
               </div>
               <h3 className="text-2xl font-bold mb-4">Etsy Listing Management</h3>
-              <p className="text-gray-600">
+              <p className="text-gray-700">
                 Automatically optimize your Etsy listings with AI-powered descriptions, tags, and pricing strategies that drive more sales.
               </p>
             </div>
@@ -51,7 +51,7 @@ export default function MomongoPage() {
                 </svg>
               </div>
               <h3 className="text-2xl font-bold mb-4">Amazon Optimization</h3>
-              <p className="text-gray-600">
+              <p className="text-gray-700">
                 Maximize your Amazon presence with intelligent keyword research, competitor analysis, and automated listing updates.
               </p>
             </div>
@@ -64,7 +64,7 @@ export default function MomongoPage() {
                 </svg>
               </div>
               <h3 className="text-2xl font-bold mb-4">Alibaba Supplier Management</h3>
-              <p className="text-gray-600">
+              <p className="text-gray-700">
                 Streamline your supply chain with intelligent supplier matching, price monitoring, and automated communication.
               </p>
             </div>
@@ -84,7 +84,7 @@ export default function MomongoPage() {
                   <div className="bg-pink-600 text-white w-8 h-8 rounded-full flex items-center justify-center mr-4 mt-1 text-sm font-bold">1</div>
                   <div>
                     <h3 className="text-xl font-bold mb-2">Connect Your Stores</h3>
-                    <p className="text-gray-600">Link your Etsy, Amazon, and supplier accounts to Momongo&apos;s unified dashboard.</p>
+                    <p className="text-gray-700">Link your Etsy, Amazon, and supplier accounts to Momongo&apos;s unified dashboard.</p>
                   </div>
                 </div>
                 
@@ -92,7 +92,7 @@ export default function MomongoPage() {
                   <div className="bg-pink-600 text-white w-8 h-8 rounded-full flex items-center justify-center mr-4 mt-1 text-sm font-bold">2</div>
                   <div>
                     <h3 className="text-xl font-bold mb-2">AI Analysis</h3>
-                    <p className="text-gray-600">Our AI analyzes your products, competitors, and market trends to identify opportunities.</p>
+                    <p className="text-gray-700">Our AI analyzes your products, competitors, and market trends to identify opportunities.</p>
                   </div>
                 </div>
                 
@@ -100,7 +100,7 @@ export default function MomongoPage() {
                   <div className="bg-pink-600 text-white w-8 h-8 rounded-full flex items-center justify-center mr-4 mt-1 text-sm font-bold">3</div>
                   <div>
                     <h3 className="text-xl font-bold mb-2">Automated Optimization</h3>
-                    <p className="text-gray-600">Momongo automatically updates listings, manages inventory, and optimizes pricing for maximum profit.</p>
+                    <p className="text-gray-700">Momongo automatically updates listings, manages inventory, and optimizes pricing for maximum profit.</p>
                   </div>
                 </div>
               </div>
@@ -108,7 +108,7 @@ export default function MomongoPage() {
             
             <div className="relative h-96">
               <div className="bg-gradient-to-br from-pink-200 to-purple-200 rounded-lg h-full flex items-center justify-center">
-                <p className="text-gray-600 text-lg">Dashboard Preview Coming Soon</p>
+                <p className="text-gray-700 text-lg font-medium">Dashboard Preview Coming Soon</p>
               </div>
             </div>
           </div>
@@ -124,25 +124,25 @@ export default function MomongoPage() {
             <div className="text-center">
               <div className="text-3xl font-bold text-pink-600 mb-2">24/7</div>
               <h3 className="text-xl font-semibold mb-2">Automation</h3>
-              <p className="text-gray-600">Your business runs around the clock, even while you sleep.</p>
+              <p className="text-gray-700">Your business runs around the clock, even while you sleep.</p>
             </div>
             
             <div className="text-center">
               <div className="text-3xl font-bold text-pink-600 mb-2">3x</div>
               <h3 className="text-xl font-semibold mb-2">Faster Growth</h3>
-              <p className="text-gray-600">Scale your business faster with AI-powered insights.</p>
+              <p className="text-gray-700">Scale your business faster with AI-powered insights.</p>
             </div>
             
             <div className="text-center">
               <div className="text-3xl font-bold text-pink-600 mb-2">50%</div>
               <h3 className="text-xl font-semibold mb-2">Time Saved</h3>
-              <p className="text-gray-600">Focus on strategy while we handle the repetitive tasks.</p>
+              <p className="text-gray-700">Focus on strategy while we handle the repetitive tasks.</p>
             </div>
             
             <div className="text-center">
               <div className="text-3xl font-bold text-pink-600 mb-2">∞</div>
               <h3 className="text-xl font-semibold mb-2">Scalability</h3>
-              <p className="text-gray-600">Manage unlimited products across multiple platforms.</p>
+              <p className="text-gray-700">Manage unlimited products across multiple platforms.</p>
             </div>
           </div>
         </div>
