@@ -1,5 +1,3 @@
-import Image from 'next/image';
-import Link from 'next/link';
 
 export default function MomongoPage() {
   return (
@@ -86,7 +84,7 @@ export default function MomongoPage() {
                   <div className="bg-pink-600 text-white w-8 h-8 rounded-full flex items-center justify-center mr-4 mt-1 text-sm font-bold">1</div>
                   <div>
                     <h3 className="text-xl font-bold mb-2">Connect Your Stores</h3>
-                    <p className="text-gray-600">Link your Etsy, Amazon, and supplier accounts to Momongo's unified dashboard.</p>
+                    <p className="text-gray-600">Link your Etsy, Amazon, and supplier accounts to Momongo&apos;s unified dashboard.</p>
                   </div>
                 </div>
                 
