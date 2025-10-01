@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://momollie.me/sitemap.xml
+
+# Block crawlers from admin and private areas
+Disallow: /admin/
+Disallow: /_next/
+Disallow: /api/
+
+# Allow all search engines to crawl the site
+Crawl-delay: 1
