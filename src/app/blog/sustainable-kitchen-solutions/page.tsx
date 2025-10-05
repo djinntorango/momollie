@@ -94,11 +94,11 @@ export default function SustainableKitchenPage() {
 
         <h3 className="text-2xl font-bold mt-8 mb-4">Eliminate Plastic Storage Bags</h3>
         <p>
-          Beeswax-lined fabric bags offer superior food preservation while eliminating hundreds of plastic bags from your routine. They're perfect for bread, produce, and bulk items.
+          Beeswax-lined fabric bags offer superior food preservation while eliminating hundreds of plastic bags from your routine. They&apos;re perfect for bread, produce, and bulk items.
         </p>
 
         <blockquote className="border-l-4 border-green-600 pl-6 italic text-lg text-gray-700 my-8">
-          "Since switching to reusable storage solutions, we've cut our kitchen waste in half and our grocery bill by 15%. The food stays fresher longer too!"
+          &quot;Since switching to reusable storage solutions, we&apos;ve cut our kitchen waste in half and our grocery bill by 15%. The food stays fresher longer too!&quot;
           <cite className="block text-sm text-gray-500 mt-2">— Maria Rodriguez, Sustainable Living Advocate</cite>
         </blockquote>
 
@@ -183,7 +183,7 @@ export default function SustainableKitchenPage() {
         <h2 className="text-3xl font-bold mt-12 mb-6">Composting Made Simple</h2>
 
         <p>
-          Food scraps don't have to go to the landfill. Even apartment dwellers can compost with the right system:
+          Food scraps don&apos;t have to go to the landfill. Even apartment dwellers can compost with the right system:
         </p>
 
         <ul className="space-y-3 my-6">
@@ -196,7 +196,7 @@ export default function SustainableKitchenPage() {
         <h2 className="text-3xl font-bold mt-12 mb-6">Energy-Efficient Cooking</h2>
 
         <p>
-          How you cook matters as much as what you cook. Simple changes can significantly reduce your kitchen's energy footprint:
+          How you cook matters as much as what you cook. Simple changes can significantly reduce your kitchen&apos;s energy footprint:
         </p>
 
         <div className="grid md:grid-cols-2 gap-6 my-8">
@@ -237,7 +237,7 @@ export default function SustainableKitchenPage() {
         <h2 className="text-3xl font-bold mt-12 mb-6">Start Small, Think Big</h2>
 
         <p>
-          You don't need to transform your kitchen overnight. Start with one or two changes and build momentum. Each sustainable choice makes the next one easier.
+          You don&apos;t need to transform your kitchen overnight. Start with one or two changes and build momentum. Each sustainable choice makes the next one easier.
         </p>
 
         <div className="bg-green-50 p-6 rounded-lg my-8">

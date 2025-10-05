@@ -45,13 +45,13 @@ export default function HomeBakerySkillsPage() {
       {/* Content */}
       <div className="prose prose-lg max-w-none">
         <p className="text-xl text-gray-700 leading-relaxed mb-8">
-          The journey from novice baker to artisan bread maker is filled with discovery, patience, and the joy of creating something beautiful with your own hands. Whether you're just starting or looking to refine your technique, these professional insights will elevate your home baking game.
+          The journey from novice baker to artisan bread maker is filled with discovery, patience, and the joy of creating something beautiful with your own hands. Whether you&apos;re just starting or looking to refine your technique, these professional insights will elevate your home baking game.
         </p>
 
         <h2 className="text-3xl font-bold mt-12 mb-6">The Foundation: Understanding Your Ingredients</h2>
 
         <p>
-          Great bread starts with understanding each ingredient's role. Flour isn't just flour—protein content, freshness, and even the milling process affect your final loaf. Here's what professional bakers know:
+          Great bread starts with understanding each ingredient&apos;s role. Flour isn&apos;t just flour—protein content, freshness, and even the milling process affect your final loaf. Here&apos;s what professional bakers know:
         </p>
 
         <div className="bg-blue-50 p-6 rounded-lg my-8">
@@ -89,7 +89,7 @@ export default function HomeBakerySkillsPage() {
         <h2 className="text-3xl font-bold mt-12 mb-6">The Art of Fermentation</h2>
 
         <p>
-          Fermentation is where the magic happens. It's not just about rising—it's about flavor development, texture creation, and digestibility improvement.
+          Fermentation is where the magic happens. It&apos;s not just about rising—it&apos;s about flavor development, texture creation, and digestibility improvement.
         </p>
 
         <h3 className="text-2xl font-bold mt-8 mb-4">Bulk Fermentation Tips</h3>
@@ -101,7 +101,7 @@ export default function HomeBakerySkillsPage() {
         </ul>
 
         <blockquote className="border-l-4 border-amber-600 pl-6 italic text-lg text-gray-700 my-8">
-          "Patience during fermentation is what separates good bread from extraordinary bread. Let time and temperature work their magic."
+          &quot;Patience during fermentation is what separates good bread from extraordinary bread. Let time and temperature work their magic.&quot;
           <cite className="block text-sm text-gray-500 mt-2">— Master Baker Jean-Luc Poujauran</cite>
         </blockquote>
 
@@ -132,10 +132,10 @@ export default function HomeBakerySkillsPage() {
           </div>
         </div>
 
-        <h2 className="text-3xl font-bold mt-12 mb-6">Scoring: The Baker's Signature</h2>
+        <h2 className="text-3xl font-bold mt-12 mb-6">Scoring: The Baker&apos;s Signature</h2>
 
         <p>
-          Scoring isn't just decorative—it controls how your bread expands in the oven. A sharp blade, confident motion, and 45-degree angle create professional-looking loaves.
+          Scoring isn&apos;t just decorative—it controls how your bread expands in the oven. A sharp blade, confident motion, and 45-degree angle create professional-looking loaves.
         </p>
 
         <div className="bg-gray-50 p-6 rounded-lg my-8">
@@ -202,7 +202,7 @@ export default function HomeBakerySkillsPage() {
         <h2 className="text-3xl font-bold mt-12 mb-6">The Joy of Sharing</h2>
 
         <p>
-          The ultimate reward of improved baking skills is sharing your creations. There's something magical about watching someone enjoy bread you made from scratch. And with proper storage in beeswax bags, your gifts will stay fresh longer, making an even better impression.
+          The ultimate reward of improved baking skills is sharing your creations. There&apos;s something magical about watching someone enjoy bread you made from scratch. And with proper storage in beeswax bags, your gifts will stay fresh longer, making an even better impression.
         </p>
       </div>
 
@@ -210,7 +210,7 @@ export default function HomeBakerySkillsPage() {
       <section className="mt-16 p-6 bg-amber-50 rounded-lg">
         <h3 className="text-2xl font-bold mb-4">Perfect Your Bread Storage</h3>
         <p className="text-gray-600 mb-6">
-          Preserve your artisan bread's quality with our handcrafted beeswax storage solutions.
+          Preserve your artisan bread&apos;s quality with our handcrafted beeswax storage solutions.
         </p>
         <div className="flex gap-4">
           <Link

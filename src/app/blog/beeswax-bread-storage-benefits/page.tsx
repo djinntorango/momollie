@@ -45,8 +45,8 @@ export default function BeeswaxBreadStoragePage() {
       {/* Content */}
       <div className="prose prose-lg max-w-none">
         <p className="text-xl text-gray-700 leading-relaxed mb-8">
-          If you're passionate about homemade bread but frustrated with how quickly it goes stale,
-          you're not alone. The secret to maintaining that perfect crust and soft interior lies not
+          If you&apos;re passionate about homemade bread but frustrated with how quickly it goes stale,
+          you&apos;re not alone. The secret to maintaining that perfect crust and soft interior lies not
           just in your baking technique, but in how you store your loaves afterward.
         </p>
 
@@ -106,15 +106,15 @@ export default function BeeswaxBreadStoragePage() {
         </p>
 
         <blockquote className="border-l-4 border-amber-600 pl-6 italic text-lg text-gray-700 my-8">
-          "Since switching to beeswax bread bags six months ago, we've eliminated over 200 plastic bags
-          from our kitchen routine. Plus, our sourdough stays fresh until the last slice!"
+          &quot;Since switching to beeswax bread bags six months ago, we&apos;ve eliminated over 200 plastic bags
+          from our kitchen routine. Plus, our sourdough stays fresh until the last slice!&quot;
           <cite className="block text-sm text-gray-500 mt-2">— Sarah M., Home Baker</cite>
         </blockquote>
 
         <h2 className="text-3xl font-bold mt-12 mb-6">Caring for Your Beeswax Bread Bag</h2>
 
         <p>
-          Proper care ensures your beeswax bread bag will serve you for years. Here's how to keep it in perfect condition:
+          Proper care ensures your beeswax bread bag will serve you for years. Here&apos;s how to keep it in perfect condition:
         </p>
 
         <ol className="list-decimal list-inside space-y-3 my-6">
@@ -129,7 +129,7 @@ export default function BeeswaxBreadStoragePage() {
         <p>
           Ready to experience the difference? Start with one high-quality beeswax bread bag and notice
           how much longer your homemade bread stays fresh. Many of our customers tell us they wish
-          they'd made the switch years earlier.
+          they&apos;d made the switch years earlier.
         </p>
 
         <div className="bg-gray-50 p-6 rounded-lg my-8">

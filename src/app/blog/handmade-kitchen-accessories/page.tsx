@@ -45,13 +45,13 @@ export default function HandmadeKitchenAccessoriesPage() {
       {/* Content */}
       <div className="prose prose-lg max-w-none">
         <p className="text-xl text-gray-700 leading-relaxed mb-8">
-          There's something deeply satisfying about using a tool crafted by human hands. In the kitchen, where we nourish our families and create memories, handmade accessories bring warmth, character, and a connection to traditional craftsmanship that mass-produced items simply cannot match.
+          There&apos;s something deeply satisfying about using a tool crafted by human hands. In the kitchen, where we nourish our families and create memories, handmade accessories bring warmth, character, and a connection to traditional craftsmanship that mass-produced items simply cannot match.
         </p>
 
         <h2 className="text-3xl font-bold mt-12 mb-6">The Renaissance of Handcraft</h2>
 
         <p>
-          As consumers become more conscious of sustainability and quality, there's been a remarkable revival in appreciation for handmade goods. This isn't nostalgia—it's a recognition that handcrafted items often offer superior functionality, durability, and beauty.
+          As consumers become more conscious of sustainability and quality, there&apos;s been a remarkable revival in appreciation for handmade goods. This isn&apos;t nostalgia—it&apos;s a recognition that handcrafted items often offer superior functionality, durability, and beauty.
         </p>
 
         <div className="bg-purple-50 p-6 rounded-lg my-8">
@@ -78,16 +78,16 @@ export default function HandmadeKitchenAccessoriesPage() {
 
         <h3 className="text-2xl font-bold mt-8 mb-4">Organic Cotton and Linen</h3>
         <p>
-          Natural fibers breathe and develop character over time. Unlike synthetic materials, they're biodegradable and often become softer and more beautiful with use. These materials are perfect for food storage solutions where breathability is essential.
+          Natural fibers breathe and develop character over time. Unlike synthetic materials, they&apos;re biodegradable and often become softer and more beautiful with use. These materials are perfect for food storage solutions where breathability is essential.
         </p>
 
-        <h3 className="text-2xl font-bold mt-8 mb-4">Beeswax: Nature's Preservative</h3>
+        <h3 className="text-2xl font-bold mt-8 mb-4">Beeswax: Nature&apos;s Preservative</h3>
         <p>
           Beeswax has been used for food preservation for millennia. Its natural antimicrobial properties, combined with its ability to create a breathable barrier, make it ideal for modern food storage needs.
         </p>
 
         <blockquote className="border-l-4 border-purple-600 pl-6 italic text-lg text-gray-700 my-8">
-          "When I use my handmade bread knife, I feel connected to generations of bakers who understood that good tools make good food. There's soul in handcrafted items that machines can't replicate."
+          &quot;When I use my handmade bread knife, I feel connected to generations of bakers who understood that good tools make good food. There&apos;s soul in handcrafted items that machines can&apos;t replicate.&quot;
           <cite className="block text-sm text-gray-500 mt-2">— Elena Chen, Artisan Baker</cite>
         </blockquote>
 
@@ -149,7 +149,7 @@ export default function HandmadeKitchenAccessoriesPage() {
         <h2 className="text-3xl font-bold mt-12 mb-6">Caring for Handmade Treasures</h2>
 
         <p>
-          Proper care ensures your handmade accessories will serve you for years, often decades. Here's how to maintain different types of handcrafted kitchen items:
+          Proper care ensures your handmade accessories will serve you for years, often decades. Here&apos;s how to maintain different types of handcrafted kitchen items:
         </p>
 
         <div className="space-y-6 my-8">
@@ -167,7 +167,7 @@ export default function HandmadeKitchenAccessoriesPage() {
           </div>
         </div>
 
-        <h2 className="text-3xl font-bold mt-12 mb-6">The Artisan's Perspective</h2>
+        <h2 className="text-3xl font-bold mt-12 mb-6">The Artisan&apos;s Perspective</h2>
 
         <p>
           Behind every handmade accessory is a craftsperson who has chosen to pursue excellence over efficiency. These artisans often come from generations of makers or have discovered their calling after leaving corporate careers in search of more meaningful work.
@@ -203,17 +203,17 @@ export default function HandmadeKitchenAccessoriesPage() {
         </p>
 
         <p>
-          In choosing handmade, we're not just buying kitchen accessories—we're investing in a philosophy that values quality over quantity, sustainability over convenience, and human connection over corporate efficiency.
+          In choosing handmade, we&apos;re not just buying kitchen accessories—we&apos;re investing in a philosophy that values quality over quantity, sustainability over convenience, and human connection over corporate efficiency.
         </p>
 
         <h2 className="text-3xl font-bold mt-12 mb-6">The Joy of Using Beautiful Things</h2>
 
         <p>
-          Perhaps the greatest benefit of handmade kitchen accessories is the simple pleasure they bring to daily tasks. There's joy in using beautiful, well-made tools. They transform routine activities into moments of appreciation for craftsmanship and the hands that created them.
+          Perhaps the greatest benefit of handmade kitchen accessories is the simple pleasure they bring to daily tasks. There&apos;s joy in using beautiful, well-made tools. They transform routine activities into moments of appreciation for craftsmanship and the hands that created them.
         </p>
 
         <p>
-          When you use a handmade bread bag to store your homemade loaf, you're participating in a tradition that spans centuries—the human desire to create, preserve, and share good food with those we love.
+          When you use a handmade bread bag to store your homemade loaf, you&apos;re participating in a tradition that spans centuries—the human desire to create, preserve, and share good food with those we love.
         </p>
       </div>
 
