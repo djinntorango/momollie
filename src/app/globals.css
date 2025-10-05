@@ -1,8 +1,46 @@
 @import "tailwindcss";
 
+/*
+ * Color Palette - Inspired by baking, bread, home decor & florals
+ * - Warm Cream: Fresh baked bread crust
+ * - Honey Gold: Natural honey & wheat
+ * - Soft Sage: Fresh herbs & natural linen
+ * - Dusty Rose: Floral accents & warmth
+ * - Warm Terracotta: Clay pottery & earthenware
+ * - Rich Cocoa: Artisan chocolate & depth
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Base colors - Light, airy backgrounds */
+  --background: #FFFBF5;
+  --foreground: #3E2C1F;
+
+  /* Primary brand colors */
+  --cream: #FFF8E7;
+  --warm-cream: #F5E6D3;
+  --honey: #E8B55F;
+  --honey-dark: #D4A04D;
+
+  /* Accent colors */
+  --sage: #A8B89F;
+  --sage-light: #C9D4C0;
+  --sage-dark: #8A9B82;
+  --dusty-rose: #D4A5A5;
+  --dusty-rose-light: #E8C7C7;
+  --dusty-rose-dark: #B88585;
+
+  /* Earth tones */
+  --terracotta: #C87855;
+  --terracotta-light: #E09470;
+  --cocoa: #5D4037;
+  --warm-gray: #8B7E74;
+
+  /* Neutrals */
+  --soft-white: #FEFEFE;
+  --warm-white: #FAF7F2;
+  --text-primary: #3E2C1F;
+  --text-secondary: #6B5B4F;
+  --text-muted: #9B8B7E;
 }
 
 @theme inline {
@@ -10,17 +48,54 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Custom Tailwind colors */
+  --color-cream: var(--cream);
+  --color-warm-cream: var(--warm-cream);
+  --color-honey: var(--honey);
+  --color-honey-dark: var(--honey-dark);
+  --color-sage: var(--sage);
+  --color-sage-light: var(--sage-light);
+  --color-sage-dark: var(--sage-dark);
+  --color-dusty-rose: var(--dusty-rose);
+  --color-dusty-rose-light: var(--dusty-rose-light);
+  --color-dusty-rose-dark: var(--dusty-rose-dark);
+  --color-terracotta: var(--terracotta);
+  --color-terracotta-light: var(--terracotta-light);
+  --color-cocoa: var(--cocoa);
+  --color-warm-gray: var(--warm-gray);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Remove default link underlines */
+a {
+  text-decoration: none;
+}
+
+/* Smooth transitions for interactive elements */
+button, a {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--warm-cream);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--honey);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--honey-dark);
 }

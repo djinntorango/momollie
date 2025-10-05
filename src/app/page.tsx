@@ -52,23 +52,23 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-amber-50 to-orange-50 py-20">
+      <section className="bg-gradient-to-br from-[#FFF8E7] via-[#FFFBF5] to-[#F5E6D3] py-20">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center">
+          <div className="flex flex-col md:flex-row items-center gap-12">
             <div className="md:w-1/2 mb-10 md:mb-0">
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
+              <h1 className="text-5xl md:text-6xl font-bold text-[#3E2C1F] mb-6 leading-tight">
                 Dear Momollie
               </h1>
-              <p className="text-xl text-gray-600 mb-6">
+              <p className="text-2xl text-[#6B5B4F] mb-6 leading-relaxed">
                 Handcrafted beeswax bread bags and artisanal kitchen accessories for sustainable living
               </p>
-              <p className="text-lg text-gray-500 mb-8">
+              <p className="text-lg text-[#9B8B7E] mb-8">
                 Keeping your homemade bread fresh naturally, without plastic
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
                   href="/products"
-                  className="bg-amber-600 text-white px-8 py-3 rounded-full hover:bg-amber-700 transition-colors text-center"
+                  className="bg-[#E8B55F] text-white px-8 py-3 rounded-full hover:bg-[#D4A04D] transition-all shadow-md hover:shadow-lg text-center font-medium"
                 >
                   Shop Our Collection
                 </Link>
@@ -76,7 +76,7 @@ export default function Home() {
                   href="https://dearmomollie.etsy.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-orange-600 text-white px-8 py-3 rounded-full hover:bg-orange-700 transition-colors text-center"
+                  className="bg-[#C87855] text-white px-8 py-3 rounded-full hover:bg-[#B86845] transition-all shadow-md hover:shadow-lg text-center font-medium"
                 >
                   Visit Our Etsy Shop
                 </Link>
@@ -89,7 +89,7 @@ export default function Home() {
                   alt="Handcrafted beeswax bread bags and kitchen accessories"
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover rounded-lg"
+                  className="object-cover rounded-2xl shadow-2xl"
                   priority
                 />
               </div>
@@ -99,49 +99,49 @@ export default function Home() {
       </section>
 
       {/* Featured Products */}
-      <section className="py-16">
+      <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-4">Our Handcrafted Collection</h2>
-          <p className="text-center text-gray-600 mb-12 max-w-2xl mx-auto">
+          <h2 className="text-4xl font-bold text-center mb-4 text-[#3E2C1F]">Our Handcrafted Collection</h2>
+          <p className="text-center text-[#6B5B4F] mb-12 max-w-2xl mx-auto text-lg">
             Discover our range of eco-friendly kitchen accessories, designed to help you live more sustainably
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <Link href="/products?category=bread-bags" className="group">
-              <div className="relative h-64 rounded-lg overflow-hidden">
+              <div className="relative h-64 rounded-2xl overflow-hidden shadow-lg">
                 <Image
                   src="/beeswax-bread-bag.jpg"
                   alt="Beeswax Bread Bags"
                   fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="object-cover group-hover:scale-110 transition-transform duration-500"
                 />
-                <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-                  <h3 className="text-white text-xl font-bold">Beeswax Bread Bags</h3>
+                <div className="absolute inset-0 bg-gradient-to-t from-[#3E2C1F]/70 via-[#3E2C1F]/30 to-transparent flex items-end p-6">
+                  <h3 className="text-white text-2xl font-bold drop-shadow-lg">Beeswax Bread Bags</h3>
                 </div>
               </div>
             </Link>
             <Link href="/products?category=kitchen-accessories" className="group">
-              <div className="relative h-64 rounded-lg overflow-hidden">
+              <div className="relative h-64 rounded-2xl overflow-hidden shadow-lg">
                 <Image
                   src="/kitchen-accessories.jpg"
                   alt="Kitchen Accessories"
                   fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="object-cover group-hover:scale-110 transition-transform duration-500"
                 />
-                <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-                  <h3 className="text-white text-xl font-bold">Kitchen Accessories</h3>
+                <div className="absolute inset-0 bg-gradient-to-t from-[#3E2C1F]/70 via-[#3E2C1F]/30 to-transparent flex items-end p-6">
+                  <h3 className="text-white text-2xl font-bold drop-shadow-lg">Kitchen Accessories</h3>
                 </div>
               </div>
             </Link>
             <Link href="/products?category=sustainable-storage" className="group">
-              <div className="relative h-64 rounded-lg overflow-hidden">
+              <div className="relative h-64 rounded-2xl overflow-hidden shadow-lg">
                 <Image
                   src="/sustainable-storage.jpg"
                   alt="Sustainable Storage Solutions"
                   fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="object-cover group-hover:scale-110 transition-transform duration-500"
                 />
-                <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-                  <h3 className="text-white text-xl font-bold">Sustainable Storage</h3>
+                <div className="absolute inset-0 bg-gradient-to-t from-[#3E2C1F]/70 via-[#3E2C1F]/30 to-transparent flex items-end p-6">
+                  <h3 className="text-white text-2xl font-bold drop-shadow-lg">Sustainable Storage</h3>
                 </div>
               </div>
             </Link>
@@ -150,17 +150,17 @@ export default function Home() {
       </section>
 
       {/* Momongo App Preview */}
-      <section className="bg-purple-50 py-16">
+      <section className="bg-gradient-to-br from-[#E8C7C7] to-[#D4A5A5] py-16">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-3xl mx-auto">
-            <h2 className="text-3xl font-bold mb-6">Introducing Momongo</h2>
-            <p className="text-lg text-gray-600 mb-8">
-              Our AI-powered ecommerce automation platform helps you manage listings on Etsy and Amazon, 
+            <h2 className="text-4xl font-bold mb-6 text-[#3E2C1F]">Introducing Momongo</h2>
+            <p className="text-lg text-[#5D4037] mb-8 leading-relaxed">
+              Our AI-powered ecommerce automation platform helps you manage listings on Etsy and Amazon,
               while streamlining your supplier relationships on Alibaba.
             </p>
             <Link
               href="/momongo"
-              className="bg-purple-600 text-white px-8 py-3 rounded-full hover:bg-purple-700 transition-colors inline-block"
+              className="bg-[#B88585] text-white px-8 py-3 rounded-full hover:bg-[#A06B6B] transition-all shadow-md hover:shadow-lg inline-block font-medium"
             >
               Learn More About Momongo
             </Link>
@@ -169,11 +169,11 @@ export default function Home() {
       </section>
 
       {/* Blog Preview */}
-      <section className="bg-gray-50 py-16">
+      <section className="bg-[#C9D4C0] py-16">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">Learn & Discover</h2>
+          <h2 className="text-4xl font-bold text-center mb-12 text-[#3E2C1F]">Learn & Discover</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
               <div className="relative h-48">
                 <Image
                   src="/blog-beeswax-benefits.jpg"
@@ -183,19 +183,19 @@ export default function Home() {
                 />
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-semibold mb-2">Why Beeswax is Superior for Bread Storage</h3>
-                <p className="text-gray-600 mb-4">
+                <h3 className="text-xl font-semibold mb-2 text-[#3E2C1F]">Why Beeswax is Superior for Bread Storage</h3>
+                <p className="text-[#6B5B4F] mb-4">
                   Discover the natural benefits of beeswax-lined bags for keeping your homemade bread fresh longer...
                 </p>
                 <Link
                   href="/blog/beeswax-bread-storage-benefits"
-                  className="text-amber-600 hover:text-amber-700"
+                  className="text-[#E8B55F] hover:text-[#D4A04D] font-medium"
                 >
                   Read More →
                 </Link>
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
               <div className="relative h-48">
                 <Image
                   src="/blog-home-bakery.jpg"
@@ -205,19 +205,19 @@ export default function Home() {
                 />
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-semibold mb-2">Improving Your Home Bakery Skills</h3>
-                <p className="text-gray-600 mb-4">
+                <h3 className="text-xl font-semibold mb-2 text-[#3E2C1F]">Improving Your Home Bakery Skills</h3>
+                <p className="text-[#6B5B4F] mb-4">
                   Expert tips and techniques to elevate your home baking and create artisan-quality bread...
                 </p>
                 <Link
                   href="/blog/home-bakery-skills"
-                  className="text-amber-600 hover:text-amber-700"
+                  className="text-[#E8B55F] hover:text-[#D4A04D] font-medium"
                 >
                   Read More →
                 </Link>
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
               <div className="relative h-48">
                 <Image
                   src="/blog-sustainable-kitchen.jpg"
@@ -227,13 +227,13 @@ export default function Home() {
                 />
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-semibold mb-2">Sustainable Kitchen Solutions</h3>
-                <p className="text-gray-600 mb-4">
+                <h3 className="text-xl font-semibold mb-2 text-[#3E2C1F]">Sustainable Kitchen Solutions</h3>
+                <p className="text-[#6B5B4F] mb-4">
                   Simple swaps and eco-friendly practices to make your kitchen more sustainable and plastic-free...
                 </p>
                 <Link
                   href="/blog/sustainable-kitchen-solutions"
-                  className="text-amber-600 hover:text-amber-700"
+                  className="text-[#E8B55F] hover:text-[#D4A04D] font-medium"
                 >
                   Read More →
                 </Link>

@@ -56,8 +56,8 @@ export default function BlogPage() {
     <div className="container mx-auto px-4 py-12">
       {/* Header */}
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">Learn & Discover</h1>
-        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+        <h1 className="text-5xl font-bold mb-4 text-[#3E2C1F]">Learn & Discover</h1>
+        <p className="text-xl text-[#6B5B4F] max-w-2xl mx-auto">
           Explore our collection of articles on sustainable living, artisan craftsmanship,
           and creating a more eco-friendly kitchen and lifestyle.
         </p>
@@ -65,7 +65,7 @@ export default function BlogPage() {
 
       {/* Featured Post */}
       <div className="mb-16">
-        <div className="bg-amber-50 rounded-lg overflow-hidden shadow-lg">
+        <div className="bg-gradient-to-br from-[#FFF8E7] to-[#F5E6D3] rounded-2xl overflow-hidden shadow-xl">
           <div className="md:flex">
             <div className="md:w-1/2">
               <div className="relative h-64 md:h-full">
@@ -79,17 +79,17 @@ export default function BlogPage() {
             </div>
             <div className="md:w-1/2 p-8">
               <div className="flex items-center gap-4 mb-4">
-                <span className="text-sm text-gray-500">{blogPosts[0].date}</span>
-                <span className="text-sm text-amber-600 bg-amber-100 px-3 py-1 rounded-full">
+                <span className="text-sm text-[#9B8B7E]">{blogPosts[0].date}</span>
+                <span className="text-sm text-white bg-[#E8B55F] px-3 py-1 rounded-full font-medium shadow-sm">
                   Featured
                 </span>
-                <span className="text-sm text-gray-500">{blogPosts[0].readTime}</span>
+                <span className="text-sm text-[#9B8B7E]">{blogPosts[0].readTime}</span>
               </div>
-              <h2 className="text-3xl font-bold mb-4">{blogPosts[0].title}</h2>
-              <p className="text-gray-600 mb-6 text-lg">{blogPosts[0].excerpt}</p>
+              <h2 className="text-3xl font-bold mb-4 text-[#3E2C1F]">{blogPosts[0].title}</h2>
+              <p className="text-[#6B5B4F] mb-6 text-lg leading-relaxed">{blogPosts[0].excerpt}</p>
               <Link
                 href={`/blog/${blogPosts[0].slug}`}
-                className="bg-amber-600 text-white px-6 py-3 rounded-lg hover:bg-amber-700 transition-colors inline-block"
+                className="bg-[#E8B55F] text-white px-6 py-3 rounded-full hover:bg-[#D4A04D] transition-all shadow-md hover:shadow-lg inline-block font-medium"
               >
                 Read Full Article →
               </Link>
@@ -101,7 +101,7 @@ export default function BlogPage() {
       {/* Blog Posts Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
         {blogPosts.slice(1).map((post) => (
-          <article key={post.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+          <article key={post.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1">
             <div className="relative h-48">
               <Image
                 src={post.image}
@@ -112,19 +112,19 @@ export default function BlogPage() {
             </div>
             <div className="p-6">
               <div className="flex items-center gap-4 mb-4">
-                <span className="text-sm text-gray-500">{post.date}</span>
-                <span className="text-sm text-amber-600">{post.category}</span>
+                <span className="text-sm text-[#9B8B7E]">{post.date}</span>
+                <span className="text-sm text-[#E8B55F] font-medium">{post.category}</span>
               </div>
-              <h2 className="text-xl font-bold mb-3 line-clamp-2">{post.title}</h2>
-              <p className="text-gray-600 mb-4 text-sm line-clamp-3">{post.excerpt}</p>
+              <h2 className="text-xl font-bold mb-3 line-clamp-2 text-[#3E2C1F]">{post.title}</h2>
+              <p className="text-[#6B5B4F] mb-4 text-sm line-clamp-3">{post.excerpt}</p>
               <div className="flex items-center justify-between">
                 <Link
                   href={`/blog/${post.slug}`}
-                  className="text-amber-600 hover:text-amber-700 font-semibold"
+                  className="text-[#E8B55F] hover:text-[#D4A04D] font-semibold"
                 >
                   Read More →
                 </Link>
-                <span className="text-xs text-gray-400">{post.readTime}</span>
+                <span className="text-xs text-[#9B8B7E]">{post.readTime}</span>
               </div>
             </div>
           </article>
@@ -132,44 +132,44 @@ export default function BlogPage() {
       </div>
 
       {/* Categories Section */}
-      <section className="bg-gray-50 rounded-lg p-8">
-        <h3 className="text-2xl font-bold mb-6 text-center">Explore by Category</h3>
+      <section className="bg-gradient-to-br from-[#C9D4C0] to-[#A8B89F] rounded-2xl p-8 shadow-lg">
+        <h3 className="text-3xl font-bold mb-6 text-center text-white">Explore by Category</h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="text-center p-4 bg-white rounded-lg shadow">
-            <div className="w-12 h-12 bg-amber-600 rounded-full flex items-center justify-center mx-auto mb-3">
+          <div className="text-center p-4 bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow">
+            <div className="w-12 h-12 bg-[#E8B55F] rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
               <span className="text-white text-xl">🐝</span>
             </div>
-            <h4 className="font-semibold mb-2">Sustainable Living</h4>
-            <p className="text-sm text-gray-600">Eco-friendly tips and practices</p>
+            <h4 className="font-semibold mb-2 text-[#3E2C1F]">Sustainable Living</h4>
+            <p className="text-sm text-[#6B5B4F]">Eco-friendly tips and practices</p>
           </div>
-          <div className="text-center p-4 bg-white rounded-lg shadow">
-            <div className="w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center mx-auto mb-3">
+          <div className="text-center p-4 bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow">
+            <div className="w-12 h-12 bg-[#C87855] rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
               <span className="text-white text-xl">🥖</span>
             </div>
-            <h4 className="font-semibold mb-2">Baking Mastery</h4>
-            <p className="text-sm text-gray-600">Professional baking techniques</p>
+            <h4 className="font-semibold mb-2 text-[#3E2C1F]">Baking Mastery</h4>
+            <p className="text-sm text-[#6B5B4F]">Professional baking techniques</p>
           </div>
-          <div className="text-center p-4 bg-white rounded-lg shadow">
-            <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-3">
+          <div className="text-center p-4 bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow">
+            <div className="w-12 h-12 bg-[#8A9B82] rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
               <span className="text-white text-xl">🌱</span>
             </div>
-            <h4 className="font-semibold mb-2">Eco-Living</h4>
-            <p className="text-sm text-gray-600">Green lifestyle choices</p>
+            <h4 className="font-semibold mb-2 text-[#3E2C1F]">Eco-Living</h4>
+            <p className="text-sm text-[#6B5B4F]">Green lifestyle choices</p>
           </div>
-          <div className="text-center p-4 bg-white rounded-lg shadow">
-            <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-3">
+          <div className="text-center p-4 bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow">
+            <div className="w-12 h-12 bg-[#D4A5A5] rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
               <span className="text-white text-xl">🏠</span>
             </div>
-            <h4 className="font-semibold mb-2">Artisan Craftsmanship</h4>
-            <p className="text-sm text-gray-600">Handmade quality and tradition</p>
+            <h4 className="font-semibold mb-2 text-[#3E2C1F]">Artisan Craftsmanship</h4>
+            <p className="text-sm text-[#6B5B4F]">Handmade quality and tradition</p>
           </div>
         </div>
       </section>
 
       {/* Newsletter Signup */}
-      <section className="mt-16 bg-amber-600 text-white rounded-lg p-8 text-center">
-        <h3 className="text-2xl font-bold mb-4">Stay Updated</h3>
-        <p className="mb-6 max-w-2xl mx-auto">
+      <section className="mt-16 bg-gradient-to-r from-[#E8B55F] to-[#D4A04D] text-white rounded-2xl p-8 text-center shadow-xl">
+        <h3 className="text-3xl font-bold mb-4">Stay Updated</h3>
+        <p className="mb-6 max-w-2xl mx-auto text-lg">
           Get the latest tips on sustainable living, home baking, and artisan craftsmanship
           delivered straight to your inbox.
         </p>
@@ -177,9 +177,9 @@ export default function BlogPage() {
           <input
             type="email"
             placeholder="Enter your email"
-            className="flex-1 px-4 py-2 rounded-lg text-gray-900"
+            className="flex-1 px-4 py-3 rounded-full text-[#3E2C1F] shadow-md focus:outline-none focus:ring-2 focus:ring-white"
           />
-          <button className="bg-white text-amber-600 px-6 py-2 rounded-lg hover:bg-gray-100 transition-colors font-semibold">
+          <button className="bg-white text-[#E8B55F] px-6 py-3 rounded-full hover:bg-[#FFFBF5] transition-all shadow-md hover:shadow-lg font-semibold">
             Subscribe
           </button>
         </div>
