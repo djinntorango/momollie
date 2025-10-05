@@ -5,7 +5,10 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(gh repo create:*)",
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:www.etsy.com)",
+      "Bash(npx:*)",
+      "Bash(git push:*)"
     ],
     "deny": []
   }

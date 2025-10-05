@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     title: "DearMomollie - Handcrafted Beeswax Bread Bags",
     description: "Natural bread storage solutions that keep your homemade bread fresh longer",
     images: ["/hero.png"],
-  },
+  }, 
 };
 
 export default function Home() {
