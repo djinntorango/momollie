@@ -25,9 +25,6 @@ export default function Navbar() {
             <Link href="/blog" className="text-[#6B5B4F] hover:text-[#E8B55F] font-medium transition-colors">
               Blog
             </Link>
-            <Link href="/momongo" className="text-[#6B5B4F] hover:text-[#E8B55F] font-medium transition-colors">
-              Momongo
-            </Link>
             <Link href="/about" className="text-[#6B5B4F] hover:text-[#E8B55F] font-medium transition-colors">
               About
             </Link>
