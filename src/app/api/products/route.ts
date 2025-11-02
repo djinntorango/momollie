@@ -4,8 +4,32 @@ import type { Product } from '@/data/products';
 // Cloud Function URL
 const CATALOG_API_URL = 'https://us-central1-momongo-a83ea.cloudfunctions.net/getPublicCatalog';
 
+// Etsy listing type (subset of fields we use)
+interface EtsyListing {
+  listing_id: string | number;
+  title?: string;
+  description?: string;
+  price?: {
+    amount: number;
+    divisor: number;
+  };
+  quantity?: number;
+  state?: string;
+  url?: string;
+  images?: Array<{
+    url_570xN?: string;
+    url_fullxfull?: string;
+  }>;
+  materials?: string[];
+  tags?: string[];
+  item_dimensions_unit?: string;
+  item_length?: string;
+  item_width?: string;
+  item_height?: string;
+}
+
 // Transform Etsy listing to Product interface
-function transformEtsyToProduct(etsyListing: any): Product | null {
+function transformEtsyToProduct(etsyListing: EtsyListing): Product | null {
   try {
     // Basic validation
     if (!etsyListing.listing_id || !etsyListing.title) {
@@ -104,7 +128,7 @@ export async function GET() {
 
     // Transform listings to Product format
     const products: Product[] = data.listings
-      .map((listing: any) => transformEtsyToProduct(listing))
+      .map((listing: EtsyListing) => transformEtsyToProduct(listing))
       .filter((product: Product | null): product is Product => product !== null);
 
     return NextResponse.json({
