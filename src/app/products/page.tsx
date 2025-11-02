@@ -300,22 +300,6 @@ export default async function ProductsPage() {
           </div>
         </div>
       </section>
-
-      {/* Call to Action */}
-      <section className="mt-16 text-center bg-gradient-to-r from-[#E8C7C7] to-[#D4A5A5] rounded-2xl p-12 shadow-lg">
-        <h2 className="text-4xl font-bold mb-4 text-[#3E2C1F]">Ready to Go Plastic-Free?</h2>
-        <p className="text-xl text-[#5D4037] mb-8">
-          Join thousands of families who have made the switch to sustainable food storage.
-        </p>
-        <Link
-          href="https://dearmomollie.etsy.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="bg-[#B88585] text-white px-8 py-3 rounded-full hover:bg-[#A06B6B] transition-all shadow-md hover:shadow-lg text-lg font-medium inline-block"
-        >
-          Visit Our Etsy Shop
-        </Link>
-      </section>
     </div>
   );
 } 
