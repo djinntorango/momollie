@@ -15,14 +15,107 @@ export const metadata: Metadata = {
   },
 };
 
-// Enable ISR (Incremental Static Regeneration)
-export const revalidate = 300; // Revalidate every 5 minutes
+// Etsy listing type
+interface EtsyListing {
+  listing_id: string | number;
+  title?: string;
+  description?: string;
+  price?: {
+    amount: number;
+    divisor: number;
+  };
+  quantity?: number;
+  state?: string;
+  url?: string;
+  images?: Array<{
+    url_570xN?: string;
+    url_fullxfull?: string;
+  }>;
+  materials?: string[];
+  tags?: string[];
+  item_dimensions_unit?: string;
+  item_length?: string;
+  item_width?: string;
+  item_height?: string;
+}
+
+// Transform Etsy listing to Product interface
+function transformEtsyToProduct(etsyListing: EtsyListing): Product | null {
+  try {
+    if (!etsyListing.listing_id || !etsyListing.title) {
+      return null;
+    }
+
+    const price = etsyListing.price?.amount && etsyListing.price?.divisor
+      ? etsyListing.price.amount / etsyListing.price.divisor
+      : 0;
+
+    const imageUrl = etsyListing.images && etsyListing.images.length > 0
+      ? etsyListing.images[0].url_570xN || etsyListing.images[0].url_fullxfull || '/products/placeholder.jpg'
+      : '/products/placeholder.jpg';
+
+    let category = 'kitchen-accessories';
+    const title = etsyListing.title?.toLowerCase() || '';
+    const tags = (etsyListing.tags || []).map((t: string) => t.toLowerCase());
+
+    if (title.includes('bread bag') || tags.includes('bread bag')) {
+      category = 'bread-bags';
+    } else if (title.includes('storage') || tags.includes('storage')) {
+      category = 'sustainable-storage';
+    }
+
+    const features: string[] = [];
+    if (etsyListing.materials && etsyListing.materials.includes('Organic cotton')) {
+      features.push('Made with organic cotton');
+    }
+    if (etsyListing.materials && etsyListing.materials.includes('beeswax')) {
+      features.push('Natural beeswax coating');
+    }
+    features.push('Handcrafted with care');
+    features.push('Sustainable and eco-friendly');
+    if (tags.includes('reusable')) features.push('Reusable and long-lasting');
+    if (tags.includes('plastic free')) features.push('100% plastic-free');
+
+    const product: Product = {
+      id: typeof etsyListing.listing_id === 'number'
+        ? etsyListing.listing_id
+        : parseInt(etsyListing.listing_id, 10),
+      name: etsyListing.title,
+      category,
+      price,
+      description: etsyListing.description || 'Handcrafted sustainable product',
+      features: features.slice(0, 5),
+      image: imageUrl,
+      etsyUrl: etsyListing.url || `https://dearmomollie.etsy.com/listing/${etsyListing.listing_id}`,
+      inStock: (etsyListing.quantity || 0) > 0 && etsyListing.state === 'active',
+      materials: etsyListing.materials || [],
+      careInstructions: [
+        'Hand wash in cool water with mild soap',
+        'Air dry completely before storing',
+        'Keep away from direct heat sources'
+      ]
+    };
+
+    if (etsyListing.item_dimensions_unit) {
+      product.dimensions = `${etsyListing.item_length || '?'}" x ${etsyListing.item_width || '?'}" x ${etsyListing.item_height || '?'}"`;
+    }
+
+    return product;
+  } catch (error) {
+    console.error('Error transforming listing:', error);
+    return null;
+  }
+}
 
 async function getProducts(): Promise<Product[]> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    const response = await fetch(`${baseUrl}/api/products`, {
-      next: { revalidate: 300 }
+    // Fetch directly from Firebase function
+    const response = await fetch('https://us-central1-momongo-a83ea.cloudfunctions.net/getPublicCatalog', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store' // Always fetch fresh data during build
     });
 
     if (!response.ok) {
@@ -31,7 +124,17 @@ async function getProducts(): Promise<Product[]> {
     }
 
     const data = await response.json();
-    return data.products || [];
+
+    if (!data.success || !data.listings) {
+      return [];
+    }
+
+    // Transform listings to Product format
+    const products: Product[] = data.listings
+      .map((listing: EtsyListing) => transformEtsyToProduct(listing))
+      .filter((product: Product | null): product is Product => product !== null);
+
+    return products;
   } catch (error) {
     console.error('Error fetching products:', error);
     return [];
