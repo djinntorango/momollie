@@ -109,6 +109,8 @@ function transformEtsyToProduct(etsyListing: EtsyListing): Product | null {
 
 async function getProducts(): Promise<Product[]> {
   try {
+    console.log('🔍 Fetching products from API...');
+
     // Fetch directly from Firebase function
     const response = await fetch('https://us-central1-momongo-a83ea.cloudfunctions.net/getPublicCatalog', {
       method: 'GET',
@@ -118,14 +120,18 @@ async function getProducts(): Promise<Product[]> {
       cache: 'no-store' // Always fetch fresh data during build
     });
 
+    console.log('📡 Response status:', response.status);
+
     if (!response.ok) {
-      console.error('Failed to fetch products:', response.status);
+      console.error('❌ Failed to fetch products:', response.status);
       return [];
     }
 
     const data = await response.json();
+    console.log('📦 API response:', { success: data.success, listingCount: data.listings?.length });
 
     if (!data.success || !data.listings) {
+      console.error('❌ Invalid API response:', data);
       return [];
     }
 
@@ -134,9 +140,11 @@ async function getProducts(): Promise<Product[]> {
       .map((listing: EtsyListing) => transformEtsyToProduct(listing))
       .filter((product: Product | null): product is Product => product !== null);
 
+    console.log('✅ Transformed products:', products.length);
+
     return products;
   } catch (error) {
-    console.error('Error fetching products:', error);
+    console.error('💥 Error fetching products:', error);
     return [];
   }
 }
