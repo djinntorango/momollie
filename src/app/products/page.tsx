@@ -296,7 +296,7 @@ export default async function ProductsPage() {
             <h3 className="text-xl font-semibold mb-2 text-[#3E2C1F]">Sustainable</h3>
             <p className="text-[#6B5B4F]">
               Help reduce plastic waste while keeping your food fresh with our eco-friendly alternatives.
-            </p>
+            </p> 
           </div>
         </div>
       </section>
