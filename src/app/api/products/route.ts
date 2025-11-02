@@ -75,7 +75,9 @@ function transformEtsyToProduct(etsyListing: EtsyListing): Product | null {
 
     // Build product object
     const product: Product = {
-      id: parseInt(etsyListing.listing_id),
+      id: typeof etsyListing.listing_id === 'number'
+        ? etsyListing.listing_id
+        : parseInt(etsyListing.listing_id, 10),
       name: etsyListing.title,
       category,
       price,
