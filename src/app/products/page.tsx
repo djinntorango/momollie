@@ -116,8 +116,8 @@ async function getProducts(): Promise<Product[]> {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-      },
-      cache: 'no-store' // Always fetch fresh data during build
+      }
+      // No cache option = default static generation behavior
     });
 
     console.log('📡 Response status:', response.status);
