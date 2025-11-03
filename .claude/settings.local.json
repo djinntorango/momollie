@@ -9,7 +9,11 @@
       "WebFetch(domain:www.etsy.com)",
       "Bash(npx:*)",
       "Bash(git push:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "WebFetch(domain:developer.etsy.com)",
+      "WebFetch(domain:developers.etsy.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:medium.com)"
     ],
     "deny": []
   }
