@@ -156,10 +156,11 @@ async function getProducts(storeId?: string): Promise<Product[]> {
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: { storeId?: string; shopId?: string };
+  searchParams: Promise<{ storeId?: string; shopId?: string }>;
 }) {
   // Get storeId from URL search params (supports both storeId and shopId)
-  const storeId = searchParams.storeId || searchParams.shopId;
+  const params = await searchParams;
+  const storeId = params.storeId || params.shopId;
   const products = await getProducts(storeId);
 
   return (
