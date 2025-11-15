@@ -107,12 +107,16 @@ function transformEtsyToProduct(etsyListing: EtsyListing): Product | null {
   }
 }
 
-async function getProducts(): Promise<Product[]> {
+async function getProducts(storeId?: string): Promise<Product[]> {
   try {
-    console.log('🔍 Fetching products from API...');
+    console.log('🔍 Fetching products from API...', { storeId });
+
+    // Build URL with storeId parameter (hardcoded to DearMomollie shop)
+    const url = new URL('https://us-central1-momongo-a83ea.cloudfunctions.net/getPublicCatalog');
+    url.searchParams.set('storeId', '60103978');
 
     // Fetch directly from Firebase function
-    const response = await fetch('https://us-central1-momongo-a83ea.cloudfunctions.net/getPublicCatalog', {
+    const response = await fetch(url.toString(), {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -149,8 +153,15 @@ async function getProducts(): Promise<Product[]> {
   }
 }
 
-export default async function ProductsPage() {
-  const products = await getProducts();
+export default async function ProductsPage({
+  searchParams,
+}: {
+  searchParams: { storeId?: string; shopId?: string };
+}) {
+  // Get storeId from URL search params (supports both storeId and shopId)
+  const storeId = searchParams.storeId || searchParams.shopId;
+  const products = await getProducts(storeId);
+
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="text-center mb-12">
