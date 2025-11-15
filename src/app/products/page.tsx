@@ -153,15 +153,9 @@ async function getProducts(storeId?: string): Promise<Product[]> {
   }
 }
 
-export default async function ProductsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ storeId?: string; shopId?: string }>;
-}) {
-  // Get storeId from URL search params (supports both storeId and shopId)
-  const params = await searchParams;
-  const storeId = params.storeId || params.shopId;
-  const products = await getProducts(storeId);
+export default async function ProductsPage() {
+  // Fetch products for DearMomollie shop (hardcoded)
+  const products = await getProducts();
 
   return (
     <div className="container mx-auto px-4 py-12">
