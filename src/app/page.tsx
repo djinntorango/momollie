@@ -159,7 +159,7 @@ export default function Home() {
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
               <div className="relative h-48">
                 <Image
-                  src="/blog-beeswax-benefits.jpg"
+                  src="/bag.png"
                   alt="Beeswax bread storage benefits"
                   fill
                   className="object-cover"

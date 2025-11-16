@@ -15,7 +15,7 @@ const blogPosts = [
     excerpt: 'Discover the natural benefits of beeswax-lined bags and why they keep your homemade bread fresh 3x longer than plastic storage methods.',
     date: 'March 15, 2024',
     category: 'Sustainable Living',
-    image: '/blog-beeswax-benefits.jpg',
+    image: '/bag.png',
     readTime: '5 min read',
     slug: 'beeswax-bread-storage-benefits',
   },

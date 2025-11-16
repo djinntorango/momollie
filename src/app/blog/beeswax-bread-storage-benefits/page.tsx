@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Why Beeswax is Superior for Bread Storage',
     description: 'Learn why beeswax is the perfect natural solution for keeping your homemade bread fresh longer without plastic.',
-    images: ['/blog-beeswax-benefits.jpg'],
+    images: ['/bag.png'],
   },
 };
 
@@ -34,7 +34,7 @@ export default function BeeswaxBreadStoragePage() {
         </div>
         <div className="relative h-96 w-full rounded-lg overflow-hidden">
           <Image
-            src="/blog-beeswax-benefits.jpg"
+            src="/bag.png"
             alt="Fresh bread stored in a beeswax-lined bag"
             fill
             className="object-cover"
