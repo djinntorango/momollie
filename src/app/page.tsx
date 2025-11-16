@@ -71,14 +71,14 @@ export default function Home() {
         {/* Content */}
         <div className="container mx-auto px-4 relative z-20">
           <div className="max-w-3xl">
-            <h1 className="text-5xl md:text-7xl font-bold text-[#3E2C1F] mb-6 leading-tight drop-shadow-md">
+            <h1 className="text-5xl md:text-7xl font-bold text-black mb-6 leading-tight drop-shadow-md">
               Dear Momollie
             </h1>
-            <p className="text-2xl md:text-3xl text-[#3E2C1F] mb-6 leading-relaxed drop-shadow-md font-medium">
-              Handcrafted beeswax bread bags and artisanal kitchen accessories for sustainable living
+            <p className="text-2xl md:text-3xl text-black mb-6 leading-relaxed drop-shadow-md font-semibold">
+              Your home for beeswax bread bags and bread-making essentials
             </p>
-            <p className="text-lg md:text-xl text-[#6B5B4F] mb-8 drop-shadow-md font-medium">
-              Keeping your homemade bread fresh naturally, without plastic
+            <p className="text-lg md:text-xl text-[#3E2C1F] mb-8 drop-shadow-md font-medium">
+              Handcrafted accessories to keep your homemade bread fresh and your kitchen plastic-free
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Link
