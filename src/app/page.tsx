@@ -65,25 +65,25 @@ export default function Home() {
           />
         </div>
 
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#FFF8E7]/90 via-[#FFFBF5]/85 to-[#F5E6D3]/90 z-10"></div>
+        {/* Gradient Overlay - lighter to show image, darker at bottom for text contrast */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#FFFBF5]/40 via-[#FFF8E7]/50 to-[#F5E6D3]/75 z-10"></div>
 
         {/* Content */}
         <div className="container mx-auto px-4 relative z-20">
           <div className="max-w-3xl">
-            <h1 className="text-5xl md:text-7xl font-bold text-[#3E2C1F] mb-6 leading-tight drop-shadow-sm">
+            <h1 className="text-5xl md:text-7xl font-bold text-[#3E2C1F] mb-6 leading-tight drop-shadow-md">
               Dear Momollie
             </h1>
-            <p className="text-2xl md:text-3xl text-[#6B5B4F] mb-6 leading-relaxed drop-shadow-sm">
+            <p className="text-2xl md:text-3xl text-[#3E2C1F] mb-6 leading-relaxed drop-shadow-md font-medium">
               Handcrafted beeswax bread bags and artisanal kitchen accessories for sustainable living
             </p>
-            <p className="text-lg md:text-xl text-[#9B8B7E] mb-8 drop-shadow-sm">
+            <p className="text-lg md:text-xl text-[#6B5B4F] mb-8 drop-shadow-md font-medium">
               Keeping your homemade bread fresh naturally, without plastic
             </p>
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Link
                 href="/products"
-                className="bg-[#E8B55F] text-white px-8 py-3 rounded-full hover:bg-[#D4A04D] transition-all shadow-md hover:shadow-lg text-center font-medium"
+                className="bg-[#E8B55F] text-white px-6 py-3 rounded-full hover:bg-[#D4A04D] transition-all shadow-md hover:shadow-lg text-center font-medium whitespace-nowrap"
               >
                 Shop Our Collection
               </Link>
@@ -91,7 +91,7 @@ export default function Home() {
                 href="https://dearmomollie.etsy.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-[#C87855] text-white px-8 py-3 rounded-full hover:bg-[#B86845] transition-all shadow-md hover:shadow-lg text-center font-medium"
+                className="bg-[#C87855] text-white px-6 py-3 rounded-full hover:bg-[#B86845] transition-all shadow-md hover:shadow-lg text-center font-medium whitespace-nowrap"
               >
                 Visit Our Etsy Shop
               </Link>
