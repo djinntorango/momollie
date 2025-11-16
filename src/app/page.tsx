@@ -52,47 +52,49 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-[#FFF8E7] via-[#FFFBF5] to-[#F5E6D3] py-20">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center gap-12">
-            <div className="md:w-1/2 mb-10 md:mb-0">
-              <h1 className="text-5xl md:text-6xl font-bold text-[#3E2C1F] mb-6 leading-tight">
-                Dear Momollie
-              </h1>
-              <p className="text-2xl text-[#6B5B4F] mb-6 leading-relaxed">
-                Handcrafted beeswax bread bags and artisanal kitchen accessories for sustainable living
-              </p>
-              <p className="text-lg text-[#9B8B7E] mb-8">
-                Keeping your homemade bread fresh naturally, without plastic
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link
-                  href="/products"
-                  className="bg-[#E8B55F] text-white px-8 py-3 rounded-full hover:bg-[#D4A04D] transition-all shadow-md hover:shadow-lg text-center font-medium"
-                >
-                  Shop Our Collection
-                </Link>
-                <Link
-                  href="https://dearmomollie.etsy.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-[#C87855] text-white px-8 py-3 rounded-full hover:bg-[#B86845] transition-all shadow-md hover:shadow-lg text-center font-medium"
-                >
-                  Visit Our Etsy Shop
-                </Link>
-              </div>
-            </div>
-            <div className="md:w-1/2">
-              <div className="relative h-96 w-full">
-                <Image
-                  src="/hero.png"
-                  alt="Handcrafted beeswax bread bags and kitchen accessories"
-                  fill
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover rounded-2xl shadow-2xl"
-                  priority
-                />
-              </div>
+      <section className="relative min-h-[600px] md:min-h-[700px] flex items-center overflow-hidden">
+        {/* Background Image */}
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="/hero.png"
+            alt="Handcrafted beeswax bread bags and kitchen accessories"
+            fill
+            sizes="100vw"
+            className="object-cover"
+            priority
+          />
+        </div>
+
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#FFF8E7]/90 via-[#FFFBF5]/85 to-[#F5E6D3]/90 z-10"></div>
+
+        {/* Content */}
+        <div className="container mx-auto px-4 relative z-20">
+          <div className="max-w-3xl">
+            <h1 className="text-5xl md:text-7xl font-bold text-[#3E2C1F] mb-6 leading-tight drop-shadow-sm">
+              Dear Momollie
+            </h1>
+            <p className="text-2xl md:text-3xl text-[#6B5B4F] mb-6 leading-relaxed drop-shadow-sm">
+              Handcrafted beeswax bread bags and artisanal kitchen accessories for sustainable living
+            </p>
+            <p className="text-lg md:text-xl text-[#9B8B7E] mb-8 drop-shadow-sm">
+              Keeping your homemade bread fresh naturally, without plastic
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link
+                href="/products"
+                className="bg-[#E8B55F] text-white px-8 py-3 rounded-full hover:bg-[#D4A04D] transition-all shadow-md hover:shadow-lg text-center font-medium"
+              >
+                Shop Our Collection
+              </Link>
+              <Link
+                href="https://dearmomollie.etsy.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-[#C87855] text-white px-8 py-3 rounded-full hover:bg-[#B86845] transition-all shadow-md hover:shadow-lg text-center font-medium"
+              >
+                Visit Our Etsy Shop
+              </Link>
             </div>
           </div>
         </div>
