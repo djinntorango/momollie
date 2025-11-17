@@ -155,19 +155,19 @@ export default function Home() {
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
               <div className="relative h-48">
                 <Image
-                  src="/bag.png"
-                  alt="Beeswax bread storage benefits"
+                  src="/bake.png"
+                  alt="How to store sourdough bread"
                   fill
                   className="object-cover"
                 />
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-semibold mb-2 text-[#3E2C1F]">Why Beeswax is Superior for Bread Storage</h3>
+                <h3 className="text-xl font-semibold mb-2 text-[#3E2C1F]">How to Store Sourdough Bread: Keep It Fresh for Days</h3>
                 <p className="text-[#6B5B4F] mb-4">
-                  Discover the natural benefits of beeswax-lined bags for keeping your homemade bread fresh longer...
+                  The secret to maintaining that perfect sourdough crust and pillowy interior lies in proper storage...
                 </p>
                 <Link
-                  href="/blog/beeswax-bread-storage-benefits"
+                  href="/blog/how-to-store-sourdough-bread"
                   className="text-[#E8B55F] hover:text-[#D4A04D] font-medium"
                 >
                   Read More →
@@ -177,19 +177,19 @@ export default function Home() {
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
               <div className="relative h-48">
                 <Image
-                  src="/bake.png"
-                  alt="Home bakery tips"
+                  src="/bag2.jpg"
+                  alt="Best bread storage methods compared"
                   fill
                   className="object-cover"
                 />
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-semibold mb-2 text-[#3E2C1F]">Improving Your Home Bakery Skills</h3>
+                <h3 className="text-xl font-semibold mb-2 text-[#3E2C1F]">Best Bread Storage Methods Compared</h3>
                 <p className="text-[#6B5B4F] mb-4">
-                  Expert tips and techniques to elevate your home baking and create artisan-quality bread...
+                  We tested every popular bread storage method to find which one keeps your homemade bread fresh the longest...
                 </p>
                 <Link
-                  href="/blog/home-bakery-skills"
+                  href="/blog/bread-storage-methods-compared"
                   className="text-[#E8B55F] hover:text-[#D4A04D] font-medium"
                 >
                   Read More →
@@ -200,18 +200,18 @@ export default function Home() {
               <div className="relative h-48">
                 <Image
                   src="/blog-sustainable-kitchen.jpg"
-                  alt="Sustainable kitchen solutions"
+                  alt="Plastic-free kitchen swaps for home bakers"
                   fill
                   className="object-cover"
                 />
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-semibold mb-2 text-[#3E2C1F]">Sustainable Kitchen Solutions</h3>
+                <h3 className="text-xl font-semibold mb-2 text-[#3E2C1F]">Plastic-Free Kitchen Swaps for Home Bakers</h3>
                 <p className="text-[#6B5B4F] mb-4">
-                  Simple swaps and eco-friendly practices to make your kitchen more sustainable and plastic-free...
+                  Simple, practical swaps that help you bake sustainably while reducing plastic waste in your kitchen...
                 </p>
                 <Link
-                  href="/blog/sustainable-kitchen-solutions"
+                  href="/blog/plastic-free-kitchen-swaps"
                   className="text-[#E8B55F] hover:text-[#D4A04D] font-medium"
                 >
                   Read More →
