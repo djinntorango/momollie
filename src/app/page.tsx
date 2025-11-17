@@ -104,49 +104,45 @@ export default function Home() {
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
           <h2 className="text-4xl font-bold text-center mb-4 text-[#3E2C1F]">Our Handcrafted Collection</h2>
-          <p className="text-center text-[#6B5B4F] mb-12 max-w-2xl mx-auto text-lg">
+          <p className="text-center text-[#6B5B4F] mb-8 max-w-2xl mx-auto text-lg">
             Discover our range of eco-friendly kitchen accessories, designed to help you live more sustainably
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <Link href="/products?category=bread-bags" className="group">
-              <div className="relative h-64 rounded-2xl overflow-hidden shadow-lg">
-                <Image
-                  src="/beeswax-bread-bag.jpg"
-                  alt="Beeswax Bread Bags"
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#3E2C1F]/70 via-[#3E2C1F]/30 to-transparent flex items-end p-6">
-                  <h3 className="text-white text-2xl font-bold drop-shadow-lg">Beeswax Bread Bags</h3>
-                </div>
-              </div>
+          <div className="text-center">
+            <Link
+              href="/products"
+              className="inline-block bg-[#E8B55F] text-white px-8 py-4 rounded-full hover:bg-[#D4A04D] transition-all shadow-md hover:shadow-lg text-lg font-medium"
+            >
+              Browse All Products
             </Link>
-            <Link href="/products?category=kitchen-accessories" className="group">
-              <div className="relative h-64 rounded-2xl overflow-hidden shadow-lg">
-                <Image
-                  src="/kitchen-accessories.jpg"
-                  alt="Kitchen Accessories"
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#3E2C1F]/70 via-[#3E2C1F]/30 to-transparent flex items-end p-6">
-                  <h3 className="text-white text-2xl font-bold drop-shadow-lg">Kitchen Accessories</h3>
-                </div>
+          </div>
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center p-6 bg-gradient-to-br from-[#FFF8E7] to-[#F5E6D3] rounded-2xl shadow-md">
+              <div className="w-16 h-16 bg-[#E8B55F] rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <span className="text-white text-3xl">🥖</span>
               </div>
-            </Link>
-            <Link href="/products?category=sustainable-storage" className="group">
-              <div className="relative h-64 rounded-2xl overflow-hidden shadow-lg">
-                <Image
-                  src="/sustainable-storage.jpg"
-                  alt="Sustainable Storage Solutions"
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#3E2C1F]/70 via-[#3E2C1F]/30 to-transparent flex items-end p-6">
-                  <h3 className="text-white text-2xl font-bold drop-shadow-lg">Sustainable Storage</h3>
-                </div>
+              <h3 className="text-xl font-semibold mb-2 text-[#3E2C1F]">Beeswax Bread Bags</h3>
+              <p className="text-[#6B5B4F]">
+                Keep your homemade bread fresh naturally with our handcrafted beeswax-lined bags
+              </p>
+            </div>
+            <div className="text-center p-6 bg-gradient-to-br from-[#FFF8E7] to-[#F5E6D3] rounded-2xl shadow-md">
+              <div className="w-16 h-16 bg-[#C87855] rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <span className="text-white text-3xl">🍴</span>
               </div>
-            </Link>
+              <h3 className="text-xl font-semibold mb-2 text-[#3E2C1F]">Kitchen Accessories</h3>
+              <p className="text-[#6B5B4F]">
+                Handmade sustainable tools and accessories for the eco-conscious home baker
+              </p>
+            </div>
+            <div className="text-center p-6 bg-gradient-to-br from-[#FFF8E7] to-[#F5E6D3] rounded-2xl shadow-md">
+              <div className="w-16 h-16 bg-[#A8B89F] rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <span className="text-white text-3xl">🌿</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2 text-[#3E2C1F]">Sustainable Storage</h3>
+              <p className="text-[#6B5B4F]">
+                Plastic-free storage solutions for a healthier kitchen and planet
+              </p>
+            </div>
           </div>
         </div>
       </section>
