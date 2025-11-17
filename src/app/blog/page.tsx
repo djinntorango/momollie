@@ -25,7 +25,7 @@ const blogPosts = [
     excerpt: 'Master the art of home baking with expert tips and techniques that will transform your kitchen into a professional bakery.',
     date: 'March 12, 2024',
     category: 'Baking Mastery',
-    image: '/blog-home-bakery.jpg',
+    image: '/bake.png',
     readTime: '8 min read',
     slug: 'home-bakery-skills',
   },

@@ -181,7 +181,7 @@ export default function Home() {
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
               <div className="relative h-48">
                 <Image
-                  src="/blog-home-bakery.jpg"
+                  src="/bake.png"
                   alt="Home bakery tips"
                   fill
                   className="object-cover"

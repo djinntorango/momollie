@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Improving Your Home Bakery Skills: Expert Tips for Artisan Bread',
     description: 'Transform your home baking with professional techniques and time-tested methods for perfect bread every time.',
-    images: ['/blog-home-bakery.jpg'],
+    images: ['/bake.png'],
   },
 };
 
@@ -34,7 +34,7 @@ export default function HomeBakerySkillsPage() {
         </div>
         <div className="relative h-96 w-full rounded-lg overflow-hidden">
           <Image
-            src="/blog-home-bakery.jpg"
+            src="/bake.png"
             alt="Artisan bread loaves in a home kitchen"
             fill
             className="object-cover"
