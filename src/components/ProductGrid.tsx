@@ -142,23 +142,18 @@ export default function ProductGrid({ products }: ProductGridProps) {
                   </ul>
                 </div>
 
-                <div className="flex gap-2">
-                  <Link
-                    href={product.etsyUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`flex-1 text-center py-2 rounded-full transition-all font-medium ${
-                      product.inStock
-                        ? 'bg-[#E8B55F] text-white hover:bg-[#D4A04D] shadow-md hover:shadow-lg'
-                        : 'bg-[#F5E6D3] text-[#9B8B7E] cursor-not-allowed'
-                    }`}
-                  >
-                    {product.inStock ? 'Buy on Etsy' : 'Out of Stock'}
-                  </Link>
-                  <button className="px-4 py-2 border-2 border-[#E8B55F] text-[#E8B55F] rounded-full hover:bg-[#FFF8E7] transition-all font-medium">
-                    Details
-                  </button>
-                </div>
+                <Link
+                  href={product.etsyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`block text-center py-2 rounded-full transition-all font-medium ${
+                    product.inStock
+                      ? 'bg-[#E8B55F] text-white hover:bg-[#D4A04D] shadow-md hover:shadow-lg'
+                      : 'bg-[#F5E6D3] text-[#9B8B7E] cursor-not-allowed'
+                  }`}
+                >
+                  {product.inStock ? 'Buy on Etsy' : 'Out of Stock'}
+                </Link>
               </div>
             </div>
           ))}
