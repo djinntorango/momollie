@@ -45,7 +45,7 @@ const blogPosts = [
     excerpt: 'In a world of mass production, handcrafted kitchen accessories offer a return to quality, sustainability, and the human touch that makes cooking a joy.',
     date: 'March 5, 2024',
     category: 'Artisan Craftsmanship',
-    image: '/blog-handmade-accessories.jpg',
+    image: '/cover.png',
     readTime: '6 min read',
     slug: 'handmade-kitchen-accessories',
   },

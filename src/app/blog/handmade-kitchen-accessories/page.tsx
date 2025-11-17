@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'The Art of Handmade Kitchen Accessories: Quality Craftsmanship for Modern Life',
     description: 'Explore the world of handcrafted kitchen accessories and discover how artisan quality enhances your cooking and lifestyle.',
-    images: ['/blog-handmade-accessories.jpg'],
+    images: ['/cover.png'],
   },
 };
 
@@ -34,7 +34,7 @@ export default function HandmadeKitchenAccessoriesPage() {
         </div>
         <div className="relative h-96 w-full rounded-lg overflow-hidden">
           <Image
-            src="/blog-handmade-accessories.jpg"
+            src="/cover.png"
             alt="Beautiful handcrafted kitchen accessories arranged on a wooden counter"
             fill
             className="object-cover"
