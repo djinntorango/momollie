@@ -1,47 +1,52 @@
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function AboutPage() {
   return (
     <div className="container mx-auto px-4 py-12">
       {/* Hero Section */}
       <section className="mb-16">
-        <div className="relative h-96 w-full mb-8">
+        <div className="relative h-96 w-full mb-8 rounded-2xl overflow-hidden">
           <Image
-            src="/placeholder-about-hero.jpg"
-            alt="Momollie Team"
+            src="/hero.png"
+            alt="DearMomollie handcrafted products"
             fill
-            className="object-cover rounded-lg"
+            className="object-cover"
           />
         </div>
-        <h1 className="text-4xl font-bold text-center mb-6">About Momollie</h1>
-        <p className="text-xl text-gray-600 text-center max-w-3xl mx-auto">
-          We&apos;re passionate about providing high-quality products for your pets and babies,
-          making your life easier and more enjoyable.
+        <h1 className="text-5xl font-bold text-center mb-6 text-[#3E2C1F]">About DearMomollie</h1>
+        <p className="text-xl text-[#6B5B4F] text-center max-w-3xl mx-auto leading-relaxed">
+          We&apos;re passionate about creating handcrafted, sustainable solutions for home bakers
+          who want to keep their bread fresh naturally—without plastic.
         </p>
       </section>
 
       {/* Our Story */}
       <section className="mb-16">
-        <h2 className="text-3xl font-bold mb-8">Our Story</h2>
-        <div className="grid md:grid-cols-2 gap-8">
+        <h2 className="text-4xl font-bold mb-8 text-[#3E2C1F]">Our Story</h2>
+        <div className="grid md:grid-cols-2 gap-12 items-center">
           <div>
-            <p className="text-gray-600 mb-4">
-              Founded in 2024, Momollie was born from a simple idea: to create a one-stop
-              shop for all your pet and baby needs. We understand that both pets and babies
-              are precious members of your family, and they deserve the best care and products.
+            <p className="text-[#6B5B4F] mb-6 text-lg leading-relaxed">
+              DearMomollie was created from a love of homemade bread and a desire to make sustainable
+              living accessible to everyone. We believe that the simple act of baking bread at home
+              shouldn&apos;t come with a side of plastic waste.
             </p>
-            <p className="text-gray-600">
-              Our mission is to provide high-quality, safe, and innovative products that make
-              your life easier while ensuring the well-being of your loved ones. We carefully
-              curate our selection to bring you only the best products from trusted brands.
+            <p className="text-[#6B5B4F] mb-6 text-lg leading-relaxed">
+              Every product we make is handcrafted with care, using natural beeswax and quality materials.
+              We&apos;re passionate about helping home bakers preserve their creations while reducing their
+              environmental footprint.
+            </p>
+            <p className="text-[#6B5B4F] text-lg leading-relaxed">
+              From our hands to your kitchen, each piece is made with attention to detail and a commitment
+              to making our customers happy.
             </p>
           </div>
-          <div className="relative h-64">
+          <div className="relative h-96 rounded-2xl overflow-hidden shadow-xl">
             <Image
-              src="/placeholder-about-story.jpg"
-              alt="Our Story"
+              src="/bag.png"
+              alt="Handcrafted beeswax bread bag"
               fill
-              className="object-cover rounded-lg"
+              className="object-cover"
             />
           </div>
         </div>
@@ -49,50 +54,89 @@ export default function AboutPage() {
 
       {/* Our Values */}
       <section className="mb-16">
-        <h2 className="text-3xl font-bold mb-8">Our Values</h2>
+        <h2 className="text-4xl font-bold mb-12 text-center text-[#3E2C1F]">What We Believe In</h2>
         <div className="grid md:grid-cols-3 gap-8">
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-xl font-bold mb-4">Quality</h3>
-            <p className="text-gray-600">
-              We never compromise on quality. Every product in our store meets our
-              rigorous standards for safety and durability.
+          <div className="bg-gradient-to-br from-[#FFF8E7] to-[#F5E6D3] p-8 rounded-2xl shadow-lg">
+            <div className="w-16 h-16 bg-[#E8B55F] rounded-full flex items-center justify-center mx-auto mb-6 shadow-md">
+              <span className="text-white text-3xl">✋</span>
+            </div>
+            <h3 className="text-2xl font-bold mb-4 text-center text-[#3E2C1F]">Handcrafted Quality</h3>
+            <p className="text-[#6B5B4F] text-center leading-relaxed">
+              Every product is handmade by us with careful attention to detail. We take pride in
+              creating accessories that are built to last and made with natural materials.
             </p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-xl font-bold mb-4">Customer Care</h3>
-            <p className="text-gray-600">
-              Your satisfaction is our priority. We&apos;re here to help you find the perfect
-              products for your needs.
+          <div className="bg-gradient-to-br from-[#FFF8E7] to-[#F5E6D3] p-8 rounded-2xl shadow-lg">
+            <div className="w-16 h-16 bg-[#C87855] rounded-full flex items-center justify-center mx-auto mb-6 shadow-md">
+              <span className="text-white text-3xl">🐝</span>
+            </div>
+            <h3 className="text-2xl font-bold mb-4 text-center text-[#3E2C1F]">Natural Ingredients</h3>
+            <p className="text-[#6B5B4F] text-center leading-relaxed">
+              We use pure beeswax in our products because it&apos;s natural, sustainable, and
+              perfect for preserving bread. No synthetic chemicals or plastics—just nature&apos;s best.
             </p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-xl font-bold mb-4">Innovation</h3>
-            <p className="text-gray-600">
-              We constantly seek out new and innovative products to make your life easier
-              and more enjoyable.
+          <div className="bg-gradient-to-br from-[#FFF8E7] to-[#F5E6D3] p-8 rounded-2xl shadow-lg">
+            <div className="w-16 h-16 bg-[#A8B89F] rounded-full flex items-center justify-center mx-auto mb-6 shadow-md">
+              <span className="text-white text-3xl">💚</span>
+            </div>
+            <h3 className="text-2xl font-bold mb-4 text-center text-[#3E2C1F]">Customer Happiness</h3>
+            <p className="text-[#6B5B4F] text-center leading-relaxed">
+              Your satisfaction matters to us. We&apos;re committed to creating products that make
+              your life easier and supporting you with care every step of the way.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Team Section */}
-      <section>
-        <h2 className="text-3xl font-bold mb-8">Meet Our Team</h2>
-        <div className="grid md:grid-cols-3 gap-8">
-          {[1, 2, 3].map((member) => (
-            <div key={member} className="text-center">
-              <div className="relative h-64 w-64 mx-auto mb-4">
-                <Image
-                  src={`/placeholder-team-${member}.jpg`}
-                  alt={`Team Member ${member}`}
-                  fill
-                  className="object-cover rounded-full"
-                />
-              </div>
-              <h3 className="text-xl font-bold">Team Member {member}</h3>
-              <p className="text-gray-600">Position</p>
-            </div>
-          ))}
+      {/* Our Craft */}
+      <section className="mb-16 bg-gradient-to-br from-[#C9D4C0] to-[#A8B89F] rounded-2xl p-12 text-white">
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="relative h-96 rounded-2xl overflow-hidden shadow-xl order-2 md:order-1">
+            <Image
+              src="/cover.png"
+              alt="Artisan craftsmanship"
+              fill
+              className="object-cover"
+            />
+          </div>
+          <div className="order-1 md:order-2">
+            <h2 className="text-4xl font-bold mb-6">The Art of Handmaking</h2>
+            <p className="text-lg mb-6 leading-relaxed">
+              We&apos;re passionate about the craft of making things by hand. Each beeswax bread bag
+              and kitchen accessory we create is made with traditional techniques and modern
+              sustainability in mind.
+            </p>
+            <p className="text-lg leading-relaxed">
+              When you choose DearMomollie, you&apos;re choosing products made with intention, care,
+              and a deep respect for both the environment and the art of home baking.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Call to Action */}
+      <section className="text-center bg-gradient-to-br from-[#FFF8E7] to-[#F5E6D3] rounded-2xl p-12 shadow-lg">
+        <h2 className="text-4xl font-bold mb-6 text-[#3E2C1F]">Join Our Community</h2>
+        <p className="text-xl text-[#6B5B4F] mb-8 max-w-2xl mx-auto leading-relaxed">
+          Discover our handcrafted collection and experience the difference that natural,
+          sustainable products can make in your kitchen.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Link
+            href="/products"
+            className="bg-[#E8B55F] text-white px-8 py-4 rounded-full hover:bg-[#D4A04D] transition-all shadow-md hover:shadow-lg text-lg font-medium"
+          >
+            Shop Our Products
+          </Link>
+          <Link
+            href="https://dearmomollie.etsy.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-[#C87855] text-white px-8 py-4 rounded-full hover:bg-[#B86845] transition-all shadow-md hover:shadow-lg text-lg font-medium"
+          >
+            Visit Our Etsy Shop
+          </Link>
         </div>
       </section>
     </div>

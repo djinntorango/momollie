@@ -5,94 +5,71 @@ import Image from 'next/image';
 import Link from 'next/link';
 import type { Product } from '@/data/products';
 
-type PriceRange = 'all' | 'under20' | '20-40' | '40-60' | 'over60';
+type SortOrder = 'default' | 'low-to-high' | 'high-to-low';
 
 interface ProductGridProps {
   products: Product[];
 }
 
 export default function ProductGrid({ products }: ProductGridProps) {
-  const [selectedPriceRange, setSelectedPriceRange] = useState<PriceRange>('all');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('default');
 
-  // Filter products by price
-  const filteredProducts = products.filter((product) => {
-    switch (selectedPriceRange) {
-      case 'under20':
-        return product.price < 20;
-      case '20-40':
-        return product.price >= 20 && product.price < 40;
-      case '40-60':
-        return product.price >= 40 && product.price < 60;
-      case 'over60':
-        return product.price >= 60;
-      case 'all':
+  // Sort products by price
+  const sortedProducts = [...products].sort((a, b) => {
+    switch (sortOrder) {
+      case 'low-to-high':
+        return a.price - b.price;
+      case 'high-to-low':
+        return b.price - a.price;
+      case 'default':
       default:
-        return true;
+        return 0; // Keep original order
     }
   });
 
   return (
     <>
-      {/* Price Filters */}
-      <div className="flex justify-center gap-4 mb-12 flex-wrap">
+      {/* Sort Options */}
+      <div className="flex justify-center gap-4 mb-12 flex-wrap items-center">
+        <span className="text-[#6B5B4F] font-medium">Sort by Price:</span>
         <button
-          onClick={() => setSelectedPriceRange('all')}
-          className={`px-6 py-2 rounded-full transition-all shadow-md ${
-            selectedPriceRange === 'all'
-              ? 'bg-[#E8B55F] text-white'
-              : 'bg-[#F5E6D3] text-[#6B5B4F] hover:bg-[#E8B55F] hover:text-white shadow-sm'
-          }`}
-        >
-          All Prices
-        </button>
-        <button
-          onClick={() => setSelectedPriceRange('under20')}
+          onClick={() => setSortOrder('default')}
           className={`px-6 py-2 rounded-full transition-all ${
-            selectedPriceRange === 'under20'
+            sortOrder === 'default'
               ? 'bg-[#E8B55F] text-white shadow-md'
               : 'bg-[#F5E6D3] text-[#6B5B4F] hover:bg-[#E8B55F] hover:text-white shadow-sm'
           }`}
         >
-          Under $20
+          Featured
         </button>
         <button
-          onClick={() => setSelectedPriceRange('20-40')}
+          onClick={() => setSortOrder('low-to-high')}
           className={`px-6 py-2 rounded-full transition-all ${
-            selectedPriceRange === '20-40'
+            sortOrder === 'low-to-high'
               ? 'bg-[#E8B55F] text-white shadow-md'
               : 'bg-[#F5E6D3] text-[#6B5B4F] hover:bg-[#E8B55F] hover:text-white shadow-sm'
           }`}
         >
-          $20 - $40
+          Low to High
         </button>
         <button
-          onClick={() => setSelectedPriceRange('40-60')}
+          onClick={() => setSortOrder('high-to-low')}
           className={`px-6 py-2 rounded-full transition-all ${
-            selectedPriceRange === '40-60'
+            sortOrder === 'high-to-low'
               ? 'bg-[#E8B55F] text-white shadow-md'
               : 'bg-[#F5E6D3] text-[#6B5B4F] hover:bg-[#E8B55F] hover:text-white shadow-sm'
           }`}
         >
-          $40 - $60
-        </button>
-        <button
-          onClick={() => setSelectedPriceRange('over60')}
-          className={`px-6 py-2 rounded-full transition-all ${
-            selectedPriceRange === 'over60'
-              ? 'bg-[#E8B55F] text-white shadow-md'
-              : 'bg-[#F5E6D3] text-[#6B5B4F] hover:bg-[#E8B55F] hover:text-white shadow-sm'
-          }`}
-        >
-          Over $60
+          High to Low
         </button>
       </div>
 
       {/* Product Grid */}
-      {filteredProducts.length === 0 ? (
+      {sortedProducts.length === 0 ? (
         <div className="text-center py-16">
-          <h2 className="text-2xl font-bold text-[#3E2C1F] mb-4">No Products Found</h2>
+          <h2 className="text-2xl font-bold text-[#3E2C1F] mb-4">No Products Available</h2>
           <p className="text-[#6B5B4F] mb-8">
-            No products match this price range. Try adjusting your filter or visit our Etsy shop.
+            Our products are being updated. Please check back soon or visit our Etsy shop directly.
           </p>
           <Link
             href="https://dearmomollie.etsy.com"
@@ -105,7 +82,7 @@ export default function ProductGrid({ products }: ProductGridProps) {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredProducts.map((product) => (
+          {sortedProducts.map((product) => (
             <div
               key={product.id}
               className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1"
