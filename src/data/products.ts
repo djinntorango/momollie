@@ -1,26 +1,84 @@
 export interface Product {
-  id: number;
+  id: string;
   name: string;
   category: string;
   price: number;
-  originalPrice?: number;
+  salePercent?: number;
   description: string;
   features: string[];
   image: string;
-  etsyUrl: string;
+  etsyUrl?: string;
   inStock: boolean;
   materials: string[];
   dimensions?: string;
+  lengthIn?: number;
+  widthIn?: number;
+  heightIn?: number;
+  weightLb?: number;
   careInstructions: string[];
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
-export const products: Product[] = [
+export interface Promotion {
+  id: string;
+  title: string;
+  message: string;
+  buttonText: string;
+  buttonLink: string;
+  active: boolean;
+  createdAt?: Date;
+}
+
+export interface Order {
+  id: string;
+  stripeSessionId: string;
+  stripePaymentIntentId?: string;
+  status: 'pending' | 'paid' | 'shipped' | 'delivered' | 'cancelled';
+  customer: {
+    name: string;
+    email: string;
+    address: {
+      line1: string;
+      line2?: string;
+      city: string;
+      state: string;
+      zip: string;
+      country: string;
+    };
+  };
+  items: Array<{
+    productId: string;
+    name: string;
+    image: string;
+    price: number;
+    salePrice?: number;
+    quantity: number;
+  }>;
+  subtotal: number;
+  total: number;
+  shippingTier?: 'standard' | 'priority';
+  addressVerified?: boolean;
+  addressIssues?: string[];
+  shippoLabelUrl?: string;
+  trackingNumber?: string;
+  trackingCarrier?: string;
+  trackingUrl?: string;
+  refundId?: string;
+  refundAmount?: number;
+  refundedAt?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+  shippedAt?: Date;
+}
+
+// Static seed data — used only to pre-populate Firestore if desired.
+// The live site fetches from Firestore; these IDs are Firestore document IDs.
+export const seedProducts: Omit<Product, 'id'>[] = [
   {
-    id: 1,
     name: "Classic Beeswax Bread Bag - Large",
     category: "bread-bags",
     price: 24.99,
-    originalPrice: 29.99,
     description: "Our signature large beeswax-lined bread bag keeps your homemade loaves fresh for up to a week. Handcrafted with organic cotton and sustainably sourced beeswax.",
     features: [
       "Keeps bread fresh 3x longer than plastic",
@@ -34,6 +92,7 @@ export const products: Product[] = [
     inStock: true,
     materials: ["Organic cotton", "Pure beeswax", "Natural hemp drawstring"],
     dimensions: "14\" x 10\" x 4\"",
+    weightLb: 0.5,
     careInstructions: [
       "Hand wash in cool water with mild soap",
       "Air dry completely before storing",
@@ -41,7 +100,6 @@ export const products: Product[] = [
     ]
   },
   {
-    id: 2,
     name: "Artisan Beeswax Bread Bag - Medium",
     category: "bread-bags",
     price: 19.99,
@@ -58,6 +116,7 @@ export const products: Product[] = [
     inStock: true,
     materials: ["Organic cotton", "Pure beeswax", "Cotton drawstring"],
     dimensions: "12\" x 8\" x 3\"",
+    weightLb: 0.4,
     careInstructions: [
       "Wipe clean with damp cloth",
       "Air dry thoroughly",
@@ -65,7 +124,6 @@ export const products: Product[] = [
     ]
   },
   {
-    id: 3,
     name: "Sourdough Starter Preservation Bag",
     category: "bread-bags",
     price: 16.99,
@@ -82,6 +140,7 @@ export const products: Product[] = [
     inStock: true,
     materials: ["Organic cotton", "Food-grade beeswax"],
     dimensions: "8\" x 6\" x 2\"",
+    weightLb: 0.3,
     careInstructions: [
       "Rinse with cool water only",
       "No soap needed - beeswax is naturally antimicrobial",
@@ -89,11 +148,9 @@ export const products: Product[] = [
     ]
   },
   {
-    id: 4,
     name: "Beeswax Food Storage Wrap Set",
     category: "kitchen-accessories",
     price: 32.99,
-    originalPrice: 39.99,
     description: "A complete set of three different sized beeswax wraps to replace plastic wrap in your kitchen. Made with organic cotton and locally sourced beeswax.",
     features: [
       "Set of 3: Small, Medium, Large",
@@ -107,6 +164,7 @@ export const products: Product[] = [
     inStock: true,
     materials: ["Organic cotton", "Pure beeswax", "Jojoba oil", "Tree resin"],
     dimensions: "Small: 7\"x8\", Medium: 10\"x11\", Large: 13\"x14\"",
+    weightLb: 0.6,
     careInstructions: [
       "Wash in cool water with mild soap",
       "Air dry completely",
@@ -114,7 +172,6 @@ export const products: Product[] = [
     ]
   },
   {
-    id: 5,
     name: "Artisan Wooden Bread Knife",
     category: "kitchen-accessories",
     price: 45.00,
@@ -131,6 +188,7 @@ export const products: Product[] = [
     inStock: true,
     materials: ["Carbon steel", "Hardwood (maple or walnut)", "Food-safe finish"],
     dimensions: "12\" total length, 8\" blade",
+    weightLb: 1.2,
     careInstructions: [
       "Hand wash and dry immediately",
       "Oil blade monthly to prevent rust",
@@ -138,7 +196,6 @@ export const products: Product[] = [
     ]
   },
   {
-    id: 6,
     name: "Bamboo Bread Box with Beeswax Insert",
     category: "sustainable-storage",
     price: 68.99,
@@ -155,6 +212,7 @@ export const products: Product[] = [
     inStock: false,
     materials: ["Sustainable bamboo", "Organic cotton insert", "Pure beeswax"],
     dimensions: "16\" x 10\" x 8\"",
+    weightLb: 3.0,
     careInstructions: [
       "Wipe bamboo with damp cloth",
       "Remove and wash beeswax insert separately",
@@ -162,7 +220,6 @@ export const products: Product[] = [
     ]
   },
   {
-    id: 7,
     name: "Herb & Spice Storage Pouches (Set of 4)",
     category: "sustainable-storage",
     price: 28.99,
@@ -179,6 +236,7 @@ export const products: Product[] = [
     inStock: true,
     materials: ["Organic cotton", "Pure beeswax", "Natural jute labels"],
     dimensions: "Various: 3\"x4\" to 6\"x8\"",
+    weightLb: 0.5,
     careInstructions: [
       "Shake out contents before cleaning",
       "Wipe with damp cloth",
@@ -186,7 +244,6 @@ export const products: Product[] = [
     ]
   },
   {
-    id: 8,
     name: "Reusable Produce Bags (Set of 3)",
     category: "sustainable-storage",
     price: 22.99,
@@ -203,6 +260,7 @@ export const products: Product[] = [
     inStock: true,
     materials: ["Organic cotton mesh", "Cotton drawstring"],
     dimensions: "Small: 8\"x10\", Medium: 10\"x12\", Large: 12\"x14\"",
+    weightLb: 0.3,
     careInstructions: [
       "Machine wash in cold water",
       "Air dry or tumble dry low",
