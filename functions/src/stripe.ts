@@ -3,6 +3,7 @@ import {defineSecret} from "firebase-functions/params";
 import Stripe from "stripe";
 import * as admin from "firebase-admin";
 import {getShippingRateOptions, ShippoAddress} from "./shippoClient.js";
+import {resendApiKey, sendOrderConfirmation} from "./email.js";
 
 const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
 const stripeWebhookSecret = defineSecret("STRIPE_WEBHOOK_SECRET");
@@ -16,6 +17,7 @@ interface CheckoutItem {
 interface CheckoutRequest {
   items: CheckoutItem[];
   origin: string;
+  destinationZip?: string;
 }
 
 interface FirestoreProduct {
@@ -41,7 +43,6 @@ const ALLOWED_ORIGINS = ["https://momollie.web.app", "https://momollie.me"];
 // Packaging dimensions (own packaging) — 12"×9"×6" box, 0.5 lb tare
 const PACKAGING = {length: "12", width: "9", height: "6", distance_unit: "in", mass_unit: "lb"};
 const PACKAGING_TARE_LB = 0.5;
-const DEFAULT_ITEM_WEIGHT_LB = 0.5;
 
 // Central US destination for fair zone-average rate estimation
 const CENTRAL_US: ShippoAddress = {
@@ -99,10 +100,16 @@ export const createCheckoutSession = onCall(
       });
     }
 
-    // Calculate total cart weight
+    // Calculate total cart weight — all products must have weightLb set
     const itemsWeightLb = data.items.reduce((sum, item) => {
       const product = productMap.get(item.productId);
-      return sum + (product?.weightLb ?? DEFAULT_ITEM_WEIGHT_LB) * item.quantity;
+      if (!product?.weightLb) {
+        throw new HttpsError(
+          "failed-precondition",
+          `Product "${product?.name ?? item.productId}" is missing weight data — update the product before checkout`
+        );
+      }
+      return sum + product.weightLb * item.quantity;
     }, 0);
     const totalWeightLb = Math.max(itemsWeightLb + PACKAGING_TARE_LB, 0.1);
 
@@ -118,13 +125,18 @@ export const createCheckoutSession = onCall(
       country: settings.country ?? "US",
     };
 
+    // Use customer's ZIP if provided, otherwise fall back to central US proxy
+    const addressTo: ShippoAddress = data.destinationZip
+      ? {name: "Customer", street1: "1 Main St", city: "", state: "", zip: data.destinationZip, country: "US"}
+      : CENTRAL_US;
+
     // Get live USPS rates from Shippo, fall back to weight-based estimates on error
     let shippingOptions: Stripe.Checkout.SessionCreateParams.ShippingOption[];
     try {
       const rates = await getShippingRateOptions(
         shippoApiKey.value(),
         addressFrom,
-        CENTRAL_US,
+        addressTo,
         {...PACKAGING, weight: totalWeightLb.toFixed(2)}
       );
 
@@ -272,7 +284,7 @@ export const createRefund = onCall(
 );
 
 export const stripeWebhook = onRequest(
-  {secrets: [stripeSecretKey, stripeWebhookSecret], cors: ALLOWED_ORIGINS},
+  {secrets: [stripeSecretKey, stripeWebhookSecret, resendApiKey], cors: ALLOWED_ORIGINS},
   async (req, res) => {
     const stripe = new Stripe(stripeSecretKey.value());
     const sig = req.headers["stripe-signature"];
@@ -295,6 +307,80 @@ export const stripeWebhook = onRequest(
       return;
     }
 
+    // ── Payment Element flow (new) ──────────────────────────────────────────
+    if (event.type === "payment_intent.succeeded") {
+      const pi = event.data.object as Stripe.PaymentIntent;
+      const orderId = pi.metadata?.orderId;
+
+      // Only process PIs created by our createPaymentIntent function
+      if (orderId) {
+        const db = admin.firestore();
+        const shipping = pi.shipping;
+        const customerName = shipping?.name ?? "";
+        const customerEmail = pi.receipt_email ?? "";
+        const address = shipping?.address;
+
+        await db.collection("orders").doc(orderId).update({
+          status: "paid",
+          customer: {
+            name: customerName,
+            email: customerEmail,
+            address: {
+              line1: address?.line1 ?? "",
+              ...(address?.line2 ? {line2: address.line2} : {}),
+              city: address?.city ?? "",
+              state: address?.state ?? "",
+              zip: address?.postal_code ?? "",
+              country: address?.country ?? "US",
+            },
+          },
+          stripePaymentIntentId: pi.id,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        // Fetch items for confirmation email
+        const orderSnap = await db.collection("orders").doc(orderId).get();
+        const orderData = orderSnap.data() as {
+          items?: Array<{name: string; quantity: number; price: number}>;
+          subtotal?: number;
+          total?: number;
+          shippingTier?: "standard" | "priority";
+        } | undefined;
+
+        if (customerEmail && orderData) {
+          try {
+            await sendOrderConfirmation(resendApiKey.value(), {
+              orderId,
+              customerName,
+              customerEmail,
+              items: (orderData.items ?? []).map((i) => ({
+                name: i.name,
+                quantity: i.quantity,
+                price: i.price,
+              })),
+              subtotal: orderData.subtotal ?? pi.amount / 100,
+              total: orderData.total ?? pi.amount / 100,
+              shippingTier: orderData.shippingTier ?? "standard",
+              address: {
+                line1: address?.line1 ?? "",
+                ...(address?.line2 ? {line2: address.line2} : {}),
+                city: address?.city ?? "",
+                state: address?.state ?? "",
+                zip: address?.postal_code ?? "",
+                country: address?.country ?? "US",
+              },
+            });
+          } catch (emailErr) {
+            console.error("[stripeWebhook/payment_intent.succeeded] Failed to send confirmation email:", emailErr);
+          }
+        }
+      }
+
+      res.json({received: true});
+      return;
+    }
+
+    // ── Checkout Session flow (legacy) ───────────────────────────────────────
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
 
@@ -311,7 +397,9 @@ export const stripeWebhook = onRequest(
       const customerEmail = fullSession.customer_details?.email ?? "";
       const address = shipping?.address ?? fullSession.customer_details?.address;
 
-      const items = lineItemsResponse.data.map((li) => {
+      const db = admin.firestore();
+
+      const baseItems = lineItemsResponse.data.map((li) => {
         const stripeProduct = li.price?.product as Stripe.Product | undefined;
         const productId = stripeProduct?.metadata?.productId ?? "";
         const unitAmount = li.price?.unit_amount ?? 0;
@@ -322,6 +410,17 @@ export const stripeWebhook = onRequest(
           price: unitAmount / 100,
           quantity: li.quantity ?? 1,
         };
+      });
+
+      // Fetch product weights from Firestore so they're stored on the order
+      const productSnaps = await Promise.all(
+        baseItems.map((item) =>
+          item.productId ? db.collection("products").doc(item.productId).get() : null
+        )
+      );
+      const items = baseItems.map((item, i) => {
+        const weightLb = (productSnaps[i]?.data() as {weightLb?: number} | undefined)?.weightLb;
+        return weightLb !== undefined ? {...item, weightLb} : item;
       });
 
       const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
@@ -354,8 +453,36 @@ export const stripeWebhook = onRequest(
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       };
 
-      const db = admin.firestore();
-      await db.collection("orders").add(orderData);
+      const orderRef = await db.collection("orders").add(orderData);
+
+      // Send order confirmation email (best-effort — don't fail the webhook if it errors)
+      if (customerEmail) {
+        try {
+          await sendOrderConfirmation(resendApiKey.value(), {
+            orderId: orderRef.id,
+            customerName: customerName,
+            customerEmail: customerEmail,
+            items: items.map((item) => ({
+              name: item.name,
+              quantity: item.quantity,
+              price: item.price,
+            })),
+            subtotal,
+            total,
+            shippingTier,
+            address: {
+              line1: address?.line1 ?? "",
+              ...(address?.line2 ? {line2: address.line2} : {}),
+              city: address?.city ?? "",
+              state: address?.state ?? "",
+              zip: address?.postal_code ?? "",
+              country: address?.country ?? "US",
+            },
+          });
+        } catch (emailErr) {
+          console.error("[stripeWebhook] Failed to send order confirmation email:", emailErr);
+        }
+      }
     }
 
     res.json({received: true});

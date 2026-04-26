@@ -15,7 +15,7 @@ import type { Order } from '@/data/products'
 function docToOrder(id: string, data: Record<string, unknown>): Order {
   return {
     id,
-    stripeSessionId: data.stripeSessionId as string,
+    stripeSessionId: data.stripeSessionId as string | undefined,
     stripePaymentIntentId: data.stripePaymentIntentId as string | undefined,
     status: data.status as Order['status'],
     customer: data.customer as Order['customer'],
@@ -26,6 +26,7 @@ function docToOrder(id: string, data: Record<string, unknown>): Order {
     addressVerified: data.addressVerified as boolean | undefined,
     addressIssues: data.addressIssues as string[] | undefined,
     shippoLabelUrl: data.shippoLabelUrl as string | undefined,
+    labelCostUsd: data.labelCostUsd as number | undefined,
     trackingNumber: data.trackingNumber as string | undefined,
     trackingCarrier: data.trackingCarrier as string | undefined,
     trackingUrl: data.trackingUrl as string | undefined,

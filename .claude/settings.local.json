@@ -14,7 +14,22 @@
       "WebFetch(domain:developers.etsy.com)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:medium.com)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(cd C:/Users/sspro/mommollie && npm list eslint-plugin-react eslint-plugin-react-hooks @typescript-eslint/eslint-plugin 2>&1 | head -20)",
+      "Bash(gsutil ls:*)",
+      "Bash(firebase functions:secrets:list)",
+      "Bash(firebase secrets:list)",
+      "Bash(firebase --help)",
+      "Bash(firebase functions:secrets:get STRIPE_SECRET_KEY)",
+      "Bash(firebase functions:secrets:get STRIPE_WEBHOOK_SECRET)",
+      "Bash(firebase functions:secrets:get SHIPPO_API_KEY)",
+      "Bash(firebase functions:log --only stripeWebhook)",
+      "Bash(firebase deploy *)",
+      "Bash(firebase functions:delete mergeLabelsPdf --region us-central1 --force)",
+      "Bash(git checkout *)",
+      "Bash(git reset *)"
     ],
     "deny": []
   }

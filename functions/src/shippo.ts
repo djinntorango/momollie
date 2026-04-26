@@ -4,12 +4,15 @@ import * as admin from "firebase-admin";
 import {
   shippoPost,
   shippoValidateAddress,
+  getShippingRateOptions,
   ShippoAddress,
   ShippoParcel,
   ShippoShipmentResponse,
   ShippoTransactionResponse,
   ShippoAddressValidation,
+  ShippingRateOptions,
 } from "./shippoClient.js";
+import {resendApiKey, sendShippingNotification} from "./email.js";
 
 const shippoApiKey = defineSecret("SHIPPO_API_KEY");
 
@@ -27,7 +30,7 @@ interface FirestoreOrder {
     };
   };
   shippingTier?: "standard" | "priority";
-  items?: Array<{quantity: number; weightLb?: number}>;
+  items?: Array<{productId?: string; name?: string; quantity: number; weightLb?: number}>;
   addressVerified?: boolean;
   addressIssues?: string[];
 }
@@ -141,12 +144,91 @@ const PRIORITY_KEYWORDS = ["priority"];
 const STANDARD_KEYWORDS = ["ground", "parcel", "first class", "media"];
 
 // Packaging dimensions (own packaging)
-const PACKAGING = {length: "12", width: "9", height: "6", distance_unit: "in", mass_unit: "lb"};
+const PACKAGING_DIMS = {length: "12", width: "9", height: "6", distance_unit: "in", mass_unit: "lb"};
 const PACKAGING_TARE_LB = 0.5;
-const DEFAULT_ITEM_WEIGHT_LB = 0.5;
+
+interface EstimateItem {
+  productId: string;
+  quantity: number;
+}
+
+interface FirestoreProductWeight {
+  weightLb?: number;
+}
+
+export const getShippingEstimate = onCall(
+  {secrets: [shippoApiKey], cors: ALLOWED_ORIGINS},
+  async (request): Promise<ShippingRateOptions> => {
+    const {destinationZip, items} = request.data as {
+      destinationZip: string;
+      items: EstimateItem[];
+    };
+
+    if (!destinationZip || !/^\d{5}$/.test(destinationZip)) {
+      throw new HttpsError("invalid-argument", "destinationZip must be a 5-digit ZIP code");
+    }
+    if (!Array.isArray(items) || items.length === 0) {
+      throw new HttpsError("invalid-argument", "items must be a non-empty array");
+    }
+
+    const db = admin.firestore();
+    const apiKey = shippoApiKey.value();
+
+    const [productSnaps, settingsSnap] = await Promise.all([
+      Promise.all(items.map((item) => db.collection("products").doc(item.productId).get())),
+      db.collection("settings").doc("shipping").get(),
+    ]);
+
+    const itemsWeightLb = items.reduce((sum, item, i) => {
+      const product = productSnaps[i].data() as FirestoreProductWeight | undefined;
+      if (!product?.weightLb) {
+        throw new HttpsError(
+          "failed-precondition",
+          `Product ${item.productId} is missing weight data — update the product before estimating shipping`
+        );
+      }
+      return sum + product.weightLb * item.quantity;
+    }, 0);
+    const totalWeightLb = Math.max(itemsWeightLb + PACKAGING_TARE_LB, 0.1);
+
+    const settings: FirestoreSettings = settingsSnap.exists
+      ? (settingsSnap.data() as FirestoreSettings)
+      : {};
+
+    const addressFrom: ShippoAddress = {
+      name: settings.name ?? "Dear Momollie",
+      street1: settings.street1 ?? "123 Bakery Lane",
+      city: settings.city ?? "Portland",
+      state: settings.state ?? "OR",
+      zip: settings.zip ?? "97201",
+      country: settings.country ?? "US",
+    };
+
+    // Shippo resolves city/state from ZIP — street1 is required by the API but
+    // not used for zone calculation, so a placeholder is fine here.
+    const addressTo: ShippoAddress = {
+      name: "Customer",
+      street1: "1 Main St",
+      city: "",
+      state: "",
+      zip: destinationZip,
+      country: "US",
+    };
+
+    return getShippingRateOptions(
+      apiKey,
+      addressFrom,
+      addressTo,
+      {...PACKAGING_DIMS, weight: totalWeightLb.toFixed(2)}
+    );
+  }
+);
+
+// PACKAGING alias for createShippingLabel
+const PACKAGING = PACKAGING_DIMS;
 
 export const createShippingLabel = onCall(
-  {secrets: [shippoApiKey], cors: ALLOWED_ORIGINS},
+  {secrets: [shippoApiKey, resendApiKey], cors: ALLOWED_ORIGINS},
   async (request) => {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Authentication required");
@@ -208,9 +290,15 @@ export const createShippingLabel = onCall(
       ...(order.customer.email ? {email: order.customer.email} : {}),
     };
 
-    // Calculate actual package weight from order items
+    // Calculate actual package weight from order items — weightLb must be set on every item
     const itemsWeight = (order.items ?? []).reduce((sum, item) => {
-      return sum + (item.weightLb ?? DEFAULT_ITEM_WEIGHT_LB) * item.quantity;
+      if (item.weightLb === undefined) {
+        throw new HttpsError(
+          "failed-precondition",
+          `Order item "${item.name ?? item.productId}" is missing weight data — re-check product settings before creating a label`
+        );
+      }
+      return sum + item.weightLb * item.quantity;
     }, 0);
     const totalWeightLb = Math.max(itemsWeight + PACKAGING_TARE_LB, 0.1);
 
@@ -273,21 +361,45 @@ export const createShippingLabel = onCall(
 
     console.log(`[createShippingLabel] SUCCESS — writing to Firestore orderId=${orderId}`);
 
+    const labelCostUsd = parseFloat(cheapestRate.amount);
+
     await db.collection("orders").doc(orderId).update({
       status: "shipped",
       shippoLabelUrl: transaction.label_url,
       trackingNumber: transaction.tracking_number,
       trackingCarrier: "USPS",
       trackingUrl: transaction.tracking_url_provider,
+      labelCostUsd,
       shippedAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
+
+    // Send shipping notification email (best-effort — don't fail the label creation if it errors)
+    if (order.customer.email) {
+      try {
+        await sendShippingNotification(resendApiKey.value(), {
+          orderId,
+          customerName: order.customer.name,
+          customerEmail: order.customer.email,
+          items: (order.items ?? []).map((item) => ({
+            name: item.name ?? "",
+            quantity: item.quantity,
+            price: 0, // price not needed for shipping notification display
+          })),
+          trackingNumber: transaction.tracking_number,
+          trackingUrl: transaction.tracking_url_provider,
+          shippingTier: order.shippingTier ?? "standard",
+        });
+      } catch (emailErr) {
+        console.error("[createShippingLabel] Failed to send shipping notification email:", emailErr);
+      }
+    }
 
     return {
       labelUrl: transaction.label_url,
       trackingNumber: transaction.tracking_number,
       trackingUrl: transaction.tracking_url_provider,
-      rateCost: parseFloat(cheapestRate.amount),
+      rateCost: labelCostUsd,
     };
   }
 );

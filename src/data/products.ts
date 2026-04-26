@@ -32,7 +32,7 @@ export interface Promotion {
 
 export interface Order {
   id: string;
-  stripeSessionId: string;
+  stripeSessionId?: string;
   stripePaymentIntentId?: string;
   status: 'pending' | 'paid' | 'shipped' | 'delivered' | 'cancelled';
   customer: {
@@ -54,6 +54,7 @@ export interface Order {
     price: number;
     salePrice?: number;
     quantity: number;
+    weightLb?: number;
   }>;
   subtotal: number;
   total: number;
@@ -61,6 +62,7 @@ export interface Order {
   addressVerified?: boolean;
   addressIssues?: string[];
   shippoLabelUrl?: string;
+  labelCostUsd?: number;
   trackingNumber?: string;
   trackingCarrier?: string;
   trackingUrl?: string;

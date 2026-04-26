@@ -6,6 +6,7 @@ import About from './pages/About'
 import Blog from './pages/Blog'
 import BlogPost from './pages/BlogPost'
 import Cart from './pages/Cart'
+import Checkout from './pages/Checkout'
 import CheckoutSuccess from './pages/CheckoutSuccess'
 import CheckoutCancel from './pages/CheckoutCancel'
 import AdminLogin from './pages/admin/Login'
@@ -16,6 +17,7 @@ import AdminEditProduct from './pages/admin/EditProduct'
 import AdminSales from './pages/admin/Sales'
 import AdminPromotions from './pages/admin/Promotions'
 import AdminOrders from './pages/admin/Orders'
+import AdminAccounting from './pages/admin/Accounting'
 import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import CartDrawer from './components/CartDrawer'
@@ -42,6 +44,7 @@ export default function App() {
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:slug" element={<BlogPost />} />
             <Route path="/cart" element={<Cart />} />
+            <Route path="/checkout" element={<Checkout />} />
             <Route path="/checkout/success" element={<CheckoutSuccess />} />
             <Route path="/checkout/cancel" element={<CheckoutCancel />} />
           </Route>
@@ -57,6 +60,7 @@ export default function App() {
               <Route path="products/:id/edit" element={<AdminEditProduct />} />
               <Route path="sales" element={<AdminSales />} />
               <Route path="promotions" element={<AdminPromotions />} />
+              <Route path="accounting" element={<AdminAccounting />} />
             </Route>
           </Route>
         </Routes>

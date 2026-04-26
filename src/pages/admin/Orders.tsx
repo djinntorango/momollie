@@ -418,12 +418,43 @@ export default function AdminOrders() {
   // Address editing
   const [editAddressId, setEditAddressId] = useState<string | null>(null)
 
+  // Filters & pagination
+  const [statusFilter, setStatusFilter] = useState<Order['status'] | 'all'>('all')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 25
+
   useEffect(() => {
     getOrders()
       .then(setOrders)
       .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)))
       .finally(() => setLoading(false))
   }, [])
+
+  // Reset to page 1 whenever filters change
+  useEffect(() => { setPage(1) }, [statusFilter, dateFrom, dateTo])
+
+  // ── Filtered & paginated orders ───────────────────────────────────────────
+
+  const filteredOrders = orders.filter((o) => {
+    if (statusFilter !== 'all' && o.status !== statusFilter) return false
+    if (dateFrom) {
+      const from = new Date(dateFrom)
+      from.setHours(0, 0, 0, 0)
+      if (!o.createdAt || o.createdAt < from) return false
+    }
+    if (dateTo) {
+      const to = new Date(dateTo)
+      to.setHours(23, 59, 59, 999)
+      if (!o.createdAt || o.createdAt > to) return false
+    }
+    return true
+  })
+
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE))
+  const safePage = Math.min(page, totalPages)
+  const paginatedOrders = filteredOrders.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
 
   // ── Selection helpers ──────────────────────────────────────────────────────
 
@@ -433,14 +464,18 @@ export default function AdminOrders() {
   )
   const selectedWithLabels = selectedArray.filter((o) => !!o.shippoLabelUrl)
   const allSelected =
-    orders.length > 0 && orders.every((o) => selectedIds.has(o.id))
+    paginatedOrders.length > 0 && paginatedOrders.every((o) => selectedIds.has(o.id))
   const someSelected = selectedIds.size > 0
 
   const toggleSelectAll = () => {
     if (allSelected) {
-      setSelectedIds(new Set())
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        paginatedOrders.forEach((o) => next.delete(o.id))
+        return next
+      })
     } else {
-      setSelectedIds(new Set(orders.map((o) => o.id)))
+      setSelectedIds((prev) => new Set([...prev, ...paginatedOrders.map((o) => o.id)]))
     }
   }
 
@@ -668,6 +703,56 @@ export default function AdminOrders() {
         )}
       </div>
 
+      {/* Filters */}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        {/* Status pills */}
+        <div className="flex flex-wrap gap-1.5">
+          {(['all', 'pending', 'paid', 'shipped', 'delivered', 'cancelled'] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={`px-3 py-1 rounded-full text-xs font-medium capitalize transition-colors ${
+                statusFilter === s
+                  ? 'bg-[#3E2C1F] text-white'
+                  : 'bg-white border border-gray-200 text-[#6B5B4F] hover:border-[#E8B55F]'
+              }`}
+            >
+              {s === 'all' ? 'All' : s}
+              {s !== 'all' && (
+                <span className="ml-1 opacity-60">
+                  ({orders.filter((o) => o.status === s).length})
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Date range */}
+        <div className="flex items-center gap-2 ml-auto">
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="px-2 py-1 border border-gray-200 rounded-lg text-xs text-[#3E2C1F] focus:outline-none focus:ring-1 focus:ring-[#E8B55F]"
+          />
+          <span className="text-xs text-[#9B8B7E]">to</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="px-2 py-1 border border-gray-200 rounded-lg text-xs text-[#3E2C1F] focus:outline-none focus:ring-1 focus:ring-[#E8B55F]"
+          />
+          {(dateFrom || dateTo) && (
+            <button
+              onClick={() => { setDateFrom(''); setDateTo('') }}
+              className="text-xs text-[#9B8B7E] hover:text-[#3E2C1F] transition-colors"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Bulk progress banner */}
       {bulkProgress && (
         <div className={`mb-4 px-4 py-3 rounded-lg text-sm flex items-center gap-3 ${
@@ -757,12 +842,14 @@ export default function AdminOrders() {
         </div>
       )}
 
-      {orders.length === 0 ? (
+      {filteredOrders.length === 0 ? (
         <div className="bg-white rounded-xl shadow p-12 text-center">
           <svg className="w-12 h-12 text-[#E8B55F] mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
           </svg>
-          <p className="text-[#6B5B4F] text-lg">No orders yet</p>
+          <p className="text-[#6B5B4F] text-lg">
+            {orders.length === 0 ? 'No orders yet' : 'No orders match the current filters'}
+          </p>
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow overflow-hidden">
@@ -788,7 +875,7 @@ export default function AdminOrders() {
               </tr>
             </thead>
             <tbody>
-              {orders.map((order) => {
+              {paginatedOrders.map((order) => {
                 const isExpanded = expandedId === order.id
                 const isLabelable = order.status === 'paid' || order.status === 'pending' ||
                   (order.status === 'shipped' && !order.shippoLabelUrl)
@@ -1038,6 +1125,55 @@ export default function AdminOrders() {
               })}
             </tbody>
           </table>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-white">
+              <p className="text-xs text-[#9B8B7E]">
+                {((safePage - 1) * PAGE_SIZE) + 1}–{Math.min(safePage * PAGE_SIZE, filteredOrders.length)} of {filteredOrders.length} orders
+              </p>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={safePage === 1}
+                  className="px-2.5 py-1 rounded text-xs text-[#6B5B4F] border border-gray-200 hover:border-[#E8B55F] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  ← Prev
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
+                  .reduce<(number | '…')[]>((acc, p, i, arr) => {
+                    if (i > 0 && (p as number) - (arr[i - 1] as number) > 1) acc.push('…')
+                    acc.push(p)
+                    return acc
+                  }, [])
+                  .map((p, i) =>
+                    p === '…' ? (
+                      <span key={`ellipsis-${i}`} className="px-1 text-xs text-[#9B8B7E]">…</span>
+                    ) : (
+                      <button
+                        key={p}
+                        onClick={() => setPage(p as number)}
+                        className={`w-7 h-7 rounded text-xs font-medium transition-colors ${
+                          safePage === p
+                            ? 'bg-[#3E2C1F] text-white'
+                            : 'text-[#6B5B4F] border border-gray-200 hover:border-[#E8B55F]'
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    )
+                  )}
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={safePage === totalPages}
+                  className="px-2.5 py-1 rounded text-xs text-[#6B5B4F] border border-gray-200 hover:border-[#E8B55F] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -1,33 +1,13 @@
-import { useState } from 'react'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase'
+import { useNavigate } from 'react-router-dom'
 import { useCart } from '@/context/CartContext'
 
 export default function CartDrawer() {
   const { items, isOpen, closeCart, removeItem, updateQuantity, subtotal } = useCart()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const navigate = useNavigate()
 
-  const handleCheckout = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const createCheckoutSession = httpsCallable<
-        { items: Array<{ productId: string; quantity: number }>; origin: string },
-        { url: string }
-      >(functions(), 'createCheckoutSession')
-
-      const result = await createCheckoutSession({
-        items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
-        origin: window.location.origin,
-      })
-
-      window.location.href = result.data.url
-    } catch (err) {
-      setError('Unable to start checkout. Please try again.')
-      console.error('Checkout error:', err)
-      setLoading(false)
-    }
+  const handleCheckout = () => {
+    closeCart()
+    navigate('/checkout')
   }
 
   return (
@@ -141,30 +121,21 @@ export default function CartDrawer() {
         {/* Footer */}
         {items.length > 0 && (
           <div className="px-6 py-4 border-t border-[#F5E6D3] bg-[#FFF8E7]">
-            {error && (
-              <p className="text-red-500 text-sm mb-3 text-center">{error}</p>
-            )}
-            <div className="flex justify-between items-center mb-4">
-              <span className="text-[#6B5B4F] font-medium">Subtotal</span>
-              <span className="text-xl font-bold text-[#3E2C1F]">${subtotal.toFixed(2)}</span>
+            <div className="flex justify-between mb-4">
+              <span className="font-semibold text-[#3E2C1F]">Subtotal</span>
+              <div className="text-right">
+                <span className="text-xl font-bold text-[#3E2C1F]">${subtotal.toFixed(2)}</span>
+                <p className="text-xs text-[#9B8B7E]">+ shipping at checkout</p>
+              </div>
             </div>
-            <p className="text-xs text-[#9B8B7E] text-center mb-3">Shipping calculated at checkout</p>
             <button
               onClick={handleCheckout}
-              disabled={loading}
-              className="w-full py-3 bg-[#3E2C1F] text-white rounded-full font-medium hover:bg-[#2D1F15] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-3 bg-[#3E2C1F] text-white rounded-full font-medium hover:bg-[#2D1F15] transition-colors flex items-center justify-center gap-2"
             >
-              {loading ? (
-                <>
-                  <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Redirecting…
-                </>
-              ) : (
-                'Checkout'
-              )}
+              Proceed to Checkout
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </button>
           </div>
         )}
