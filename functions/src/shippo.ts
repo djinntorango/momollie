@@ -30,7 +30,7 @@ interface FirestoreOrder {
     };
   };
   shippingTier?: "standard" | "priority";
-  items?: Array<{productId?: string; name?: string; quantity: number; weightLb?: number}>;
+  items?: Array<{productId?: string; name?: string; quantity: number; weightLb?: number; price?: number; salePrice?: number}>;
   addressVerified?: boolean;
   addressIssues?: string[];
 }
@@ -227,6 +227,88 @@ export const getShippingEstimate = onCall(
 // PACKAGING alias for createShippingLabel
 const PACKAGING = PACKAGING_DIMS;
 
+/**
+ * Returns the selected rate details (service, cost) without purchasing.
+ * Used to show a cost-preview modal before the admin commits to buying.
+ */
+export const previewShippingLabel = onCall(
+  {secrets: [shippoApiKey], cors: ALLOWED_ORIGINS},
+  async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Authentication required");
+
+    const {orderId} = request.data as {orderId: string};
+    if (!orderId) throw new HttpsError("invalid-argument", "orderId is required");
+
+    const db = admin.firestore();
+    const [orderSnap, settingsSnap] = await Promise.all([
+      db.collection("orders").doc(orderId).get(),
+      db.collection("settings").doc("shipping").get(),
+    ]);
+    if (!orderSnap.exists) throw new HttpsError("not-found", `Order ${orderId} not found`);
+
+    const order = orderSnap.data() as FirestoreOrder;
+    const settings: FirestoreSettings = settingsSnap.exists ? (settingsSnap.data() as FirestoreSettings) : {};
+    const apiKey = shippoApiKey.value();
+
+    const addressFrom: ShippoAddress = {
+      name: settings.name ?? "Dear Momollie",
+      street1: settings.street1 ?? "123 Bakery Lane",
+      city: settings.city ?? "Portland",
+      state: settings.state ?? "OR",
+      zip: settings.zip ?? "97201",
+      country: settings.country ?? "US",
+      ...(settings.street2 ? {street2: settings.street2} : {}),
+    };
+
+    const addressTo: ShippoAddress = {
+      name: order.customer.name,
+      street1: order.customer.address.line1,
+      city: order.customer.address.city,
+      state: order.customer.address.state,
+      zip: order.customer.address.zip,
+      country: order.customer.address.country || "US",
+      ...(order.customer.address.line2 ? {street2: order.customer.address.line2} : {}),
+    };
+
+    const itemsWeight = (order.items ?? []).reduce((sum, item) => {
+      if (item.weightLb === undefined) {
+        throw new HttpsError("failed-precondition", `Item "${item.name ?? item.productId}" is missing weight`);
+      }
+      return sum + item.weightLb * item.quantity;
+    }, 0);
+    const totalWeightLb = Math.max(itemsWeight + PACKAGING_TARE_LB, 0.1);
+
+    const shipment = await shippoPost<ShippoShipmentResponse>(apiKey, "/shipments/", {
+      address_from: addressFrom,
+      address_to: addressTo,
+      parcels: [{...PACKAGING, weight: totalWeightLb.toFixed(2)}],
+      async: false,
+    });
+
+    if (!shipment.rates || shipment.rates.length === 0) {
+      throw new HttpsError("internal", "No shipping rates returned from Shippo");
+    }
+
+    const shippingTier = order.shippingTier ?? "standard";
+    const uspsRates = shipment.rates.filter((r) => r.provider.toUpperCase() === "USPS");
+    const keywords = shippingTier === "priority" ? PRIORITY_KEYWORDS : STANDARD_KEYWORDS;
+    const tierRates = uspsRates.filter((r) =>
+      keywords.some((k) => r.servicelevel.name.toLowerCase().includes(k))
+    );
+    const ratePool = tierRates.length > 0 ? tierRates : uspsRates.length > 0 ? uspsRates : shipment.rates;
+    const rate = ratePool.reduce((best, r) =>
+      parseFloat(r.amount) < parseFloat(best.amount) ? r : best
+    );
+
+    return {
+      serviceLevel: rate.servicelevel.name,
+      carrier: rate.provider,
+      amountUsd: parseFloat(rate.amount),
+      estimatedDays: rate.estimated_days ?? null,
+    };
+  }
+);
+
 export const createShippingLabel = onCall(
   {secrets: [shippoApiKey, resendApiKey], cors: ALLOWED_ORIGINS},
   async (request) => {
@@ -384,7 +466,8 @@ export const createShippingLabel = onCall(
           items: (order.items ?? []).map((item) => ({
             name: item.name ?? "",
             quantity: item.quantity,
-            price: 0, // price not needed for shipping notification display
+            price: item.price ?? 0,
+            salePrice: item.salePrice,
           })),
           trackingNumber: transaction.tracking_number,
           trackingUrl: transaction.tracking_url_provider,

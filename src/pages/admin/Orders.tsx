@@ -24,6 +24,177 @@ interface CreateLabelResult {
   rateCost: number
 }
 
+interface LabelPreview {
+  orderId: string
+  serviceLevel: string
+  carrier: string
+  amountUsd: number
+  estimatedDays: number | null
+}
+
+interface BulkLabelPreviewItem extends LabelPreview {
+  customerName: string
+}
+
+function BulkLabelPreviewModal({
+  items,
+  onConfirm,
+  onCancel,
+  purchasing,
+}: {
+  items: BulkLabelPreviewItem[]
+  onConfirm: () => void
+  onCancel: () => void
+  purchasing: boolean
+}) {
+  const total = items.reduce((s, i) => s + i.amountUsd, 0)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onCancel}>
+      <div className="absolute inset-0 bg-black/40" />
+      <div
+        className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[90vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-lg font-bold text-[#3E2C1F] mb-1">Purchase {items.length} Shipping Labels</h2>
+        <p className="text-sm text-[#9B8B7E] mb-4">Review costs before charging your Shippo account</p>
+
+        <div className="overflow-y-auto flex-1 space-y-2 mb-4">
+          {items.map((item) => (
+            <div key={item.orderId} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-[#3E2C1F] truncate">{item.customerName}</p>
+                <p className="text-xs text-[#9B8B7E]">
+                  #{item.orderId.slice(0, 8).toUpperCase()} · {item.serviceLevel}
+                  {item.estimatedDays !== null ? ` · ${item.estimatedDays}d` : ''}
+                </p>
+              </div>
+              <span className="text-sm font-semibold text-[#3E2C1F] ml-4 flex-shrink-0">${item.amountUsd.toFixed(2)}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex justify-between items-center py-3 border-t border-gray-200 mb-4">
+          <span className="font-semibold text-[#3E2C1F]">Total</span>
+          <span className="text-xl font-bold text-[#3E2C1F]">${total.toFixed(2)}</span>
+        </div>
+
+        <p className="text-xs text-[#9B8B7E] mb-4">
+          Charged to your Shippo account balance.
+        </p>
+
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={purchasing}
+            className="flex-1 px-4 py-2 border border-gray-200 text-[#3E2C1F] rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={purchasing}
+            className="flex-1 px-4 py-2 bg-[#E8B55F] text-white rounded-lg text-sm font-medium hover:bg-[#D4A04D] transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
+          >
+            {purchasing ? (
+              <>
+                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Purchasing…
+              </>
+            ) : `Purchase ${items.length} Labels — $${total.toFixed(2)}`}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function LabelPreviewModal({
+  preview,
+  onConfirm,
+  onCancel,
+  purchasing,
+}: {
+  preview: LabelPreview
+  onConfirm: () => void
+  onCancel: () => void
+  purchasing: boolean
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onCancel}>
+      <div className="absolute inset-0 bg-black/40" />
+      <div
+        className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-lg font-bold text-[#3E2C1F] mb-1">Purchase Shipping Label</h2>
+        <p className="text-sm text-[#9B8B7E] mb-5">
+          Order #{preview.orderId.slice(0, 8).toUpperCase()}
+        </p>
+
+        <div className="bg-[#FFF8E7] border border-[#E8B55F]/40 rounded-xl p-4 mb-5 space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-[#6B5B4F]">Service</span>
+            <span className="text-sm font-semibold text-[#3E2C1F]">{preview.serviceLevel}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-[#6B5B4F]">Carrier</span>
+            <span className="text-sm font-semibold text-[#3E2C1F]">{preview.carrier}</span>
+          </div>
+          {preview.estimatedDays !== null && (
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-[#6B5B4F]">Est. delivery</span>
+              <span className="text-sm font-semibold text-[#3E2C1F]">
+                {preview.estimatedDays} business day{preview.estimatedDays !== 1 ? 's' : ''}
+              </span>
+            </div>
+          )}
+          <div className="flex justify-between items-center pt-2 border-t border-[#E8B55F]/30">
+            <span className="text-sm font-semibold text-[#3E2C1F]">Label cost</span>
+            <span className="text-xl font-bold text-[#3E2C1F]">${preview.amountUsd.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <p className="text-xs text-[#9B8B7E] mb-5">
+          This amount will be charged to your Shippo account balance.
+        </p>
+
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={purchasing}
+            className="flex-1 px-4 py-2 border border-gray-200 text-[#3E2C1F] rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={purchasing}
+            className="flex-1 px-4 py-2 bg-[#E8B55F] text-white rounded-lg text-sm font-medium hover:bg-[#D4A04D] transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
+          >
+            {purchasing ? (
+              <>
+                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Purchasing…
+              </>
+            ) : `Purchase — $${preview.amountUsd.toFixed(2)}`}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 type VerifyResult = Record<string, { isValid: boolean; issues: string[] }>
 
 interface RefundResult {
@@ -83,7 +254,7 @@ function RefundModal({ order, onClose, onRefunded }: RefundModalProps) {
       >
         <h2 className="text-lg font-bold text-[#3E2C1F] mb-1">Issue Refund</h2>
         <p className="text-sm text-[#9B8B7E] mb-4">
-          {order.customer.name} · Order #{order.id.slice(0, 8).toUpperCase()}
+          {order.customer?.name ?? '—'} · Order #{order.id.slice(0, 8).toUpperCase()}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -143,6 +314,129 @@ function RefundModal({ order, onClose, onRefunded }: RefundModalProps) {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  )
+}
+
+interface SendNoteModalProps {
+  order: Order
+  onClose: () => void
+}
+
+function SendNoteModal({ order, onClose }: SendNoteModalProps) {
+  const [subject, setSubject] = useState('')
+  const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    try {
+      const fn = httpsCallable<{ orderId: string; subject: string; message: string }, { success: boolean }>(
+        functions(), 'sendOrderNote'
+      )
+      await fn({ orderId: order.id, subject: subject.trim(), message: message.trim() })
+      setSent(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const inp = 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E8B55F]'
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/40" />
+      <div
+        className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-lg font-bold text-[#3E2C1F] mb-1">Send Note to Customer</h2>
+        <p className="text-sm text-[#9B8B7E] mb-4">
+          {order.customer?.name ?? '—'} · {order.customer?.email ?? '—'} · Order #{order.id.slice(0, 8).toUpperCase()}
+        </p>
+
+        {sent ? (
+          <div className="text-center py-6">
+            <svg className="w-10 h-10 text-green-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <p className="text-sm font-medium text-[#3E2C1F] mb-1">Note sent!</p>
+            <p className="text-xs text-[#9B8B7E] mb-4">
+              {order.customer.name} will receive your message from hello@momollie.me
+            </p>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-[#3E2C1F] text-white rounded-lg text-sm font-medium hover:bg-[#2D1F15]"
+            >
+              Done
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-[#6B5B4F] mb-1">Subject</label>
+              <input
+                type="text"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder={`About your order #${order.id.slice(0, 8).toUpperCase()}`}
+                required
+                className={inp}
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[#6B5B4F] mb-1">Message</label>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Write your message here…"
+                required
+                rows={6}
+                className={inp + ' resize-none'}
+              />
+              <p className="mt-1 text-xs text-[#9B8B7E]">
+                Sent from hello@momollie.me — customer can reply directly to you.
+              </p>
+            </div>
+
+            {error && (
+              <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
+            )}
+
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 px-4 py-2 border border-gray-200 text-[#3E2C1F] rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-1 px-4 py-2 bg-[#3E2C1F] text-white rounded-lg text-sm font-medium hover:bg-[#2D1F15] transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
+              >
+                {loading ? (
+                  <>
+                    <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Sending…
+                  </>
+                ) : 'Send Note'}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   )
@@ -221,13 +515,13 @@ interface EditAddressFormProps {
 
 function EditAddressForm({ order, labelError, onSave, onCancel }: EditAddressFormProps) {
   const [fields, setFields] = useState({
-    name: order.customer.name,
-    line1: order.customer.address.line1,
-    line2: order.customer.address.line2 ?? '',
-    city: order.customer.address.city,
-    state: order.customer.address.state,
-    zip: order.customer.address.zip,
-    country: order.customer.address.country,
+    name: order.customer?.name ?? '',
+    line1: order.customer?.address.line1 ?? '',
+    line2: order.customer?.address.line2 ?? '',
+    city: order.customer?.address.city ?? '',
+    state: order.customer?.address.state ?? '',
+    zip: order.customer?.address.zip ?? '',
+    country: order.customer?.address.country ?? 'US',
   })
   const [saving, setSaving] = useState(false)
   const [validating, setValidating] = useState(false)
@@ -277,7 +571,7 @@ function EditAddressForm({ order, labelError, onSave, onCancel }: EditAddressFor
     setSaving(true)
     const customer: Order['customer'] = {
       name: fields.name,
-      email: order.customer.email,
+      email: order.customer?.email ?? '',
       address: {
         line1: fields.line1,
         ...(fields.line2 ? { line2: fields.line2 } : {}),
@@ -397,11 +691,21 @@ export default function AdminOrders() {
   const [error, setError] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [refundOrder, setRefundOrder] = useState<Order | null>(null)
+  const [sendNoteOrder, setSendNoteOrder] = useState<Order | null>(null)
 
   // Single-order actions
   const [labelLoading, setLabelLoading] = useState<string | null>(null)
   const [labelErrors, setLabelErrors] = useState<Record<string, string>>({})
   const [deliveredLoading, setDeliveredLoading] = useState<string | null>(null)
+
+  // Label preview modal
+  const [labelPreview, setLabelPreview] = useState<LabelPreview | null>(null)
+  const [labelPurchasing, setLabelPurchasing] = useState(false)
+
+  // Bulk label preview modal
+  const [bulkPreviews, setBulkPreviews] = useState<BulkLabelPreviewItem[] | null>(null)
+  const [bulkPreviewLoading, setBulkPreviewLoading] = useState(false)
+  const [bulkPurchasing, setBulkPurchasing] = useState(false)
 
   // Multi-select
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -503,35 +807,55 @@ export default function AdminOrders() {
     })
   }, [patchOrder])
 
-  // ── Single label ──────────────────────────────────────────────────────────
+  // ── Single label (two-step: preview → confirm → purchase) ────────────────
 
   const handleCreateLabel = async (order: Order) => {
     setLabelLoading(order.id)
     setLabelErrors((prev) => { const next = { ...prev }; delete next[order.id]; return next })
     try {
-      const fn = httpsCallable<{ orderId: string }, CreateLabelResult>(
-        functions(), 'createShippingLabel'
+      const previewFn = httpsCallable<{ orderId: string }, Omit<LabelPreview, 'orderId'>>(
+        functions(), 'previewShippingLabel'
       )
-      const result = await fn({ orderId: order.id })
-      const { labelUrl, trackingNumber, trackingUrl } = result.data
-      console.log('[handleCreateLabel] result:', result.data)
-      if (!labelUrl) {
-        throw new Error('Label created but no URL returned — check Firebase logs for Shippo response details')
-      }
-      const labelPatch = {
-        status: 'shipped' as const, shippoLabelUrl: labelUrl,
-        trackingNumber, trackingCarrier: 'USPS', trackingUrl, shippedAt: new Date(),
-      }
-      patchOrder(order.id, labelPatch)
-      await updateOrder(order.id, labelPatch)
+      const result = await previewFn({ orderId: order.id })
+      setLabelPreview({ orderId: order.id, ...result.data })
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       setLabelErrors((prev) => ({ ...prev, [order.id]: msg }))
-      // Auto-expand the row and open address editor so the user can fix it immediately
       setExpandedId(order.id)
       setEditAddressId(order.id)
     } finally {
       setLabelLoading(null)
+    }
+  }
+
+  const handleConfirmLabel = async () => {
+    if (!labelPreview) return
+    const orderId = labelPreview.orderId
+    const order = orders.find((o) => o.id === orderId)
+    if (!order) return
+    setLabelPurchasing(true)
+    try {
+      const fn = httpsCallable<{ orderId: string }, CreateLabelResult>(
+        functions(), 'createShippingLabel'
+      )
+      const result = await fn({ orderId })
+      const { labelUrl, trackingNumber, trackingUrl } = result.data
+      if (!labelUrl) throw new Error('Label created but no URL returned')
+      const labelPatch = {
+        status: 'shipped' as const, shippoLabelUrl: labelUrl,
+        trackingNumber, trackingCarrier: 'USPS', trackingUrl, shippedAt: new Date(),
+      }
+      patchOrder(orderId, labelPatch)
+      await updateOrder(orderId, labelPatch)
+      setLabelPreview(null)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setLabelErrors((prev) => ({ ...prev, [orderId]: msg }))
+      setExpandedId(orderId)
+      setEditAddressId(orderId)
+      setLabelPreview(null)
+    } finally {
+      setLabelPurchasing(false)
     }
   }
 
@@ -540,35 +864,74 @@ export default function AdminOrders() {
   const handleBulkCreateLabels = async () => {
     const targets = selectedLabelable
     if (targets.length === 0) return
-    setBulkProgress({ current: 0, total: targets.length, errors: [] })
+
+    // Step 1: preview all orders in parallel
+    setBulkPreviewLoading(true)
+    const previewFn = httpsCallable<{ orderId: string }, Omit<LabelPreview, 'orderId'>>(
+      functions(), 'previewShippingLabel'
+    )
+    const previews: BulkLabelPreviewItem[] = []
+    const previewErrors: string[] = []
+
+    await Promise.all(targets.map(async (order) => {
+      try {
+        const result = await previewFn({ orderId: order.id })
+        previews.push({
+          orderId: order.id,
+          customerName: order.customer?.name ?? `#${order.id.slice(0, 8).toUpperCase()}`,
+          ...result.data,
+        })
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        previewErrors.push(`Order ${order.id.slice(0, 8).toUpperCase()}: ${msg}`)
+        setLabelErrors((prev) => ({ ...prev, [order.id]: msg }))
+      }
+    }))
+
+    setBulkPreviewLoading(false)
+
+    if (previews.length === 0) return
+    // Sort to match selection order
+    previews.sort((a, b) => {
+      const ai = targets.findIndex((o) => o.id === a.orderId)
+      const bi = targets.findIndex((o) => o.id === b.orderId)
+      return ai - bi
+    })
+    setBulkPreviews(previews)
+  }
+
+  const handleBulkConfirm = async () => {
+    if (!bulkPreviews) return
+    setBulkPurchasing(true)
+    setBulkProgress({ current: 0, total: bulkPreviews.length, errors: [] })
 
     const fn = httpsCallable<{ orderId: string }, CreateLabelResult>(
       functions(), 'createShippingLabel'
     )
     const errors: string[] = []
-    const labelUrls: string[] = []
 
-    for (let i = 0; i < targets.length; i++) {
-      const order = targets[i]
-      setBulkProgress({ current: i + 1, total: targets.length, errors })
+    for (let i = 0; i < bulkPreviews.length; i++) {
+      const { orderId } = bulkPreviews[i]
+      setBulkProgress({ current: i + 1, total: bulkPreviews.length, errors })
       try {
-        const result = await fn({ orderId: order.id })
+        const result = await fn({ orderId })
         const { labelUrl, trackingNumber, trackingUrl } = result.data
-        labelUrls.push(labelUrl)
         const labelPatch = {
           status: 'shipped' as const, shippoLabelUrl: labelUrl,
           trackingNumber, trackingCarrier: 'USPS', trackingUrl, shippedAt: new Date(),
         }
-        patchOrder(order.id, labelPatch)
-        await updateOrder(order.id, labelPatch)
+        patchOrder(orderId, labelPatch)
+        await updateOrder(orderId, labelPatch)
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
-        errors.push(`Order ${order.id.slice(0, 8)}: ${msg}`)
-        setLabelErrors((prev) => ({ ...prev, [order.id]: msg }))
+        errors.push(`Order ${orderId.slice(0, 8)}: ${msg}`)
+        setLabelErrors((prev) => ({ ...prev, [orderId]: msg }))
       }
     }
 
-    setBulkProgress({ current: targets.length, total: targets.length, errors })
+    setBulkPreviews(null)
+    setBulkPurchasing(false)
+    setBulkProgress({ current: bulkPreviews.length, total: bulkPreviews.length, errors })
     setTimeout(() => setBulkProgress(null), errors.length ? 8000 : 3000)
     // Keep selection so the "Print X Labels" button is immediately available
   }
@@ -676,6 +1039,28 @@ export default function AdminOrders() {
           order={refundOrder}
           onClose={() => setRefundOrder(null)}
           onRefunded={handleRefunded}
+        />
+      )}
+      {sendNoteOrder && (
+        <SendNoteModal
+          order={sendNoteOrder}
+          onClose={() => setSendNoteOrder(null)}
+        />
+      )}
+      {labelPreview && (
+        <LabelPreviewModal
+          preview={labelPreview}
+          onConfirm={handleConfirmLabel}
+          onCancel={() => setLabelPreview(null)}
+          purchasing={labelPurchasing}
+        />
+      )}
+      {bulkPreviews && (
+        <BulkLabelPreviewModal
+          items={bulkPreviews}
+          onConfirm={handleBulkConfirm}
+          onCancel={() => setBulkPreviews(null)}
+          purchasing={bulkPurchasing}
         />
       )}
 
@@ -803,13 +1188,20 @@ export default function AdminOrders() {
           {selectedLabelable.length > 0 && (
             <button
               onClick={handleBulkCreateLabels}
-              disabled={!!bulkProgress && bulkProgress.current < bulkProgress.total}
+              disabled={bulkPreviewLoading || (!!bulkProgress && bulkProgress.current < bulkProgress.total)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-[#E8B55F] hover:bg-[#D4A04D] rounded-lg text-sm font-medium transition-colors disabled:opacity-60"
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-              </svg>
-              Create {selectedLabelable.length} Label{selectedLabelable.length !== 1 ? 's' : ''}
+              {bulkPreviewLoading ? (
+                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              ) : (
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+              )}
+              {bulkPreviewLoading ? 'Getting rates…' : `Create ${selectedLabelable.length} Label${selectedLabelable.length !== 1 ? 's' : ''}`}
             </button>
           )}
 
@@ -909,8 +1301,8 @@ export default function AdminOrders() {
                         <div className="flex items-center gap-1.5">
                           <AddressStatusBadge order={order} />
                           <div>
-                            <div className="font-medium text-[#3E2C1F]">{order.customer.name}</div>
-                            <CopyEmailButton email={order.customer.email} />
+                            <div className="font-medium text-[#3E2C1F]">{order.customer?.name ?? <span className="text-[#9B8B7E] italic text-xs">Pending</span>}</div>
+                            {order.customer?.email && <CopyEmailButton email={order.customer.email} />}
                           </div>
                         </div>
                       </td>
@@ -991,6 +1383,17 @@ export default function AdminOrders() {
                               Refund
                             </button>
                           )}
+                          {order.customer?.email && (
+                            <button
+                              onClick={() => setSendNoteOrder(order)}
+                              className="px-3 py-1.5 border border-[#E8B55F] text-[#3E2C1F] rounded-lg text-xs font-medium hover:bg-[#FFF8E7] transition-colors flex items-center gap-1"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                              </svg>
+                              Send Note
+                            </button>
+                          )}
                         </div>
                         {labelErrors[order.id] && editAddressId !== order.id && (
                           <div className="mt-1.5 flex items-start gap-1 text-xs text-red-600 max-w-xs">
@@ -1062,11 +1465,17 @@ export default function AdminOrders() {
                               ) : (
                                 <>
                                   <div className="text-sm text-[#6B5B4F] space-y-0.5">
-                                    <p>{order.customer.name}</p>
-                                    <p>{order.customer.address.line1}</p>
-                                    {order.customer.address.line2 && <p>{order.customer.address.line2}</p>}
-                                    <p>{order.customer.address.city}, {order.customer.address.state} {order.customer.address.zip}</p>
-                                    <p>{order.customer.address.country}</p>
+                                    {order.customer ? (
+                                      <>
+                                        <p>{order.customer.name}</p>
+                                        <p>{order.customer.address.line1}</p>
+                                        {order.customer.address.line2 && <p>{order.customer.address.line2}</p>}
+                                        <p>{order.customer.address.city}, {order.customer.address.state} {order.customer.address.zip}</p>
+                                        <p>{order.customer.address.country}</p>
+                                      </>
+                                    ) : (
+                                      <p className="italic text-[#9B8B7E]">Address not yet collected</p>
+                                    )}
                                   </div>
                                   {order.addressIssues && order.addressIssues.length > 0 && (
                                     <ul className="mt-2 space-y-1">

@@ -1,3 +1,8 @@
+export interface ProductImage {
+  url: string;
+  alt: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -6,9 +11,12 @@ export interface Product {
   salePercent?: number;
   description: string;
   features: string[];
-  image: string;
+  image: string;           // primary image URL — kept for cart/backward compat
+  images?: ProductImage[]; // full gallery with alt text
+  videoUrl?: string;       // optional YouTube or direct video URL
   etsyUrl?: string;
   inStock: boolean;
+  stockQty?: number;        // undefined = no quantity tracking; 0 = out of stock
   materials: string[];
   dimensions?: string;
   lengthIn?: number;

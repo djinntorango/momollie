@@ -12,7 +12,12 @@ import { httpsCallable } from 'firebase/functions'
 import { functions } from '@/lib/firebase'
 import { useCart } from '@/context/CartContext'
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
+// Loaded lazily inside the component so Stripe.js isn't injected on every page
+let stripePromise: ReturnType<typeof loadStripe> | null = null
+function getStripePromise() {
+  if (!stripePromise) stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
+  return stripePromise
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -117,6 +122,14 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
   const [estimateLoading, setEstimateLoading] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Step 2 → 3 finalization
+  const [finalizing, setFinalizing] = useState(false)
+  const [finalizeError, setFinalizeError] = useState<string | null>(null)
+  const [finalizedTotalCents, setFinalizedTotalCents] = useState<number | null>(null)
+  const [finalizedShippingCents, setFinalizedShippingCents] = useState<number | null>(null)
+  const [taxCents, setTaxCents] = useState<number | null>(null)
+  const [taxError, setTaxError] = useState<string | null>(null)
+
   // Step 3
   const [submitting, setSubmitting] = useState(false)
   const [paymentError, setPaymentError] = useState<string | null>(null)
@@ -170,33 +183,50 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
         : estimate.standard
       : null
 
-  const totalCents = selectedRate ? subtotalCents + selectedRate.amountCents : subtotalCents
+  const estimatedTotalCents = selectedRate ? subtotalCents + selectedRate.amountCents : subtotalCents
+  const displayTotalCents = finalizedTotalCents ?? estimatedTotalCents
   const fmt = (cents: number) => `$${(cents / 100).toFixed(2)}`
+
+  const handleContinueToPayment = async () => {
+    if (!address || !shippingTier || !estimate) return
+    setFinalizing(true)
+    setFinalizeError(null)
+    try {
+      const finalizeFn = httpsCallable<
+        { paymentIntentId: string; shippingTier: string; destinationZip: string },
+        { totalCents: number; shippingCostCents: number; taxCents: number; taxError: string | null }
+      >(functions(), 'finalizePaymentIntent')
+      const result = await finalizeFn({
+        paymentIntentId,
+        shippingTier,
+        destinationZip: address.address.postal_code,
+      })
+      setFinalizedTotalCents(result.data.totalCents)
+      setFinalizedShippingCents(result.data.shippingCostCents)
+      setTaxCents(result.data.taxCents)
+      setTaxError(result.data.taxError ?? null)
+      setStep(3)
+    } catch (err) {
+      setFinalizeError(err instanceof Error ? err.message : 'Unable to calculate totals. Please try again.')
+    } finally {
+      setFinalizing(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!stripe || !elements || !address || !shippingTier || !estimate) return
+    if (!stripe || !elements || !finalizedTotalCents || !address) return
 
     setSubmitting(true)
     setPaymentError(null)
 
     try {
-      const finalizeFn = httpsCallable<
-        { paymentIntentId: string; shippingTier: string; destinationZip: string },
-        { totalCents: number; shippingCostCents: number }
-      >(functions(), 'finalizePaymentIntent')
-
-      await finalizeFn({
-        paymentIntentId,
-        shippingTier,
-        destinationZip: address.address.postal_code,
-      })
-
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/checkout/success`,
           receipt_email: email,
+
           shipping: {
             name: address.name,
             address: {
@@ -343,16 +373,34 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
           </div>
         )}
 
+        {finalizeError && (
+          <p className="mt-4 text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+            {finalizeError}
+          </p>
+        )}
+
         <button
           type="button"
-          onClick={() => setStep(3)}
-          disabled={!addressComplete || !shippingTier || !estimate}
+          onClick={handleContinueToPayment}
+          disabled={!addressComplete || !shippingTier || !estimate || finalizing}
           className="mt-5 w-full py-3 bg-[#3E2C1F] text-white rounded-full font-medium hover:bg-[#2D1F15] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          Continue to payment
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
+          {finalizing ? (
+            <>
+              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              Calculating total…
+            </>
+          ) : (
+            <>
+              Continue to payment
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </>
+          )}
         </button>
       </div>
 
@@ -385,7 +433,7 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
                   </p>
                 )}
               </div>
-              <button type="button" onClick={() => setStep(2)} className="text-xs text-[#E8B55F] hover:underline flex-shrink-0 ml-4">
+              <button type="button" onClick={() => { setStep(2); setFinalizedTotalCents(null); setTaxCents(null); setFinalizedShippingCents(null) }} className="text-xs text-[#E8B55F] hover:underline flex-shrink-0 ml-4">
                 Edit
               </button>
             </div>
@@ -395,7 +443,6 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
         <h2 className="text-lg font-semibold text-[#3E2C1F] mb-4">Payment</h2>
         <PaymentElement
           options={{
-            fields: { billingDetails: { email: 'never' } },
             defaultValues: { billingDetails: { email } },
           }}
         />
@@ -406,15 +453,33 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
             <span>Subtotal</span>
             <span>{fmt(subtotalCents)}</span>
           </div>
-          {selectedRate && (
+          {finalizedShippingCents != null && (
             <div className="flex justify-between text-sm text-[#6B5B4F]">
               <span>Shipping</span>
-              <span>{fmt(selectedRate.amountCents)}</span>
+              <span>{fmt(finalizedShippingCents)}</span>
+            </div>
+          )}
+          {taxCents != null && taxCents > 0 && (
+            <div className="flex justify-between text-sm text-[#6B5B4F]">
+              <span>Tax</span>
+              <span>{fmt(taxCents)}</span>
+            </div>
+          )}
+          {taxCents === 0 && !taxError && (
+            <div className="flex justify-between text-sm text-[#6B5B4F]">
+              <span>Tax</span>
+              <span>—</span>
+            </div>
+          )}
+          {taxError && (
+            <div className="flex justify-between text-sm text-amber-600">
+              <span>Tax</span>
+              <span title={taxError}>—</span>
             </div>
           )}
           <div className="flex justify-between font-bold text-[#3E2C1F] text-lg pt-1">
             <span>Total</span>
-            <span>{fmt(totalCents)}</span>
+            <span>{fmt(displayTotalCents)}</span>
           </div>
         </div>
 
@@ -426,7 +491,7 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
 
         <button
           type="submit"
-          disabled={!stripe || !elements || submitting}
+          disabled={!stripe || !elements || submitting || !finalizedTotalCents}
           className="mt-5 w-full py-4 bg-[#3E2C1F] text-white rounded-full font-semibold text-base hover:bg-[#2D1F15] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {submitting ? (
@@ -438,7 +503,7 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
               Processing…
             </>
           ) : (
-            `Pay ${fmt(totalCents)}`
+            `Pay ${fmt(displayTotalCents)}`
           )}
         </button>
 
@@ -582,7 +647,7 @@ export default function Checkout() {
                   <div className="h-12 bg-[#F5E6D3] rounded-full mt-4" />
                 </div>
               ) : (
-                <Elements stripe={stripePromise} options={elementsOptions}>
+                <Elements stripe={getStripePromise()} options={elementsOptions}>
                   <CheckoutForm
                     paymentIntentId={paymentIntentId}
                     subtotalCents={Math.round(subtotal * 100)}

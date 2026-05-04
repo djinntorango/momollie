@@ -69,8 +69,8 @@ function exportCsv(rows: Order[], dateFrom: string, dateTo: string) {
     return [
       fmtDate(o.createdAt),
       o.id,
-      o.customer.name,
-      o.customer.email,
+      o.customer?.name ?? '',
+      o.customer?.email ?? '',
       o.subtotal.toFixed(2),
       shippingCollected(o).toFixed(2),
       o.total.toFixed(2),
@@ -325,8 +325,8 @@ export default function Accounting() {
                       <td className="px-4 py-3 text-[#6B5B4F] whitespace-nowrap">{fmtDate(o.createdAt)}</td>
                       <td className="px-4 py-3 font-mono text-xs text-[#6B5B4F]">{o.id.slice(0, 8).toUpperCase()}</td>
                       <td className="px-4 py-3">
-                        <div className="font-medium text-[#3E2C1F] text-xs">{o.customer.name}</div>
-                        <div className="text-[#9B8B7E] text-xs">{o.customer.email}</div>
+                        <div className="font-medium text-[#3E2C1F] text-xs">{o.customer?.name ?? <span className="italic text-[#9B8B7E]">Pending</span>}</div>
+                        <div className="text-[#9B8B7E] text-xs">{o.customer?.email ?? ''}</div>
                       </td>
                       <td className="px-4 py-3 text-right text-[#3E2C1F]">{fmt(o.subtotal)}</td>
                       <td className="px-4 py-3 text-right text-[#6B5B4F]">{ship > 0 ? fmt(ship) : '—'}</td>

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import type { Product } from '@/data/products'
 import { useCart } from '@/context/CartContext'
 
@@ -18,6 +19,8 @@ export default function ProductCard({ product, categoryName, variant = 'default'
     : 'bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow'
 
   const imageHeight = variant === 'compact' ? 'h-48' : variant === 'featured' ? 'h-80' : 'h-64'
+  const primaryImage = product.images?.[0]?.url ?? product.image
+  const primaryAlt = product.images?.[0]?.alt ?? product.name
 
   const handleAddToCart = () => {
     addItem({
@@ -32,18 +35,20 @@ export default function ProductCard({ product, categoryName, variant = 'default'
 
   return (
     <div className={cardClass}>
-      <div className={`relative ${imageHeight}`}>
-        <img src={product.image} alt={product.name} className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute top-2 left-2 flex flex-col gap-1">
-          {!product.inStock && <span className="bg-red-500 text-white px-2 py-1 rounded text-xs font-semibold">Out of Stock</span>}
-          {salePrice && <span className="bg-green-500 text-white px-2 py-1 rounded text-xs font-semibold">{product.salePercent}% Off</span>}
+      <Link to={`/products/${product.id}`} className="block">
+        <div className={`relative ${imageHeight}`}>
+          <img src={primaryImage} alt={primaryAlt} className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute top-2 left-2 flex flex-col gap-1">
+            {!product.inStock && <span className="bg-red-500 text-white px-2 py-1 rounded text-xs font-semibold">Out of Stock</span>}
+            {salePrice && <span className="bg-green-500 text-white px-2 py-1 rounded text-xs font-semibold">{product.salePercent}% Off</span>}
+          </div>
+          <div className="absolute top-2 right-2">
+            {product.materials.includes('Organic cotton') && (
+              <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-semibold">Organic</span>
+            )}
+          </div>
         </div>
-        <div className="absolute top-2 right-2">
-          {product.materials.includes('Organic cotton') && (
-            <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-semibold">Organic</span>
-          )}
-        </div>
-      </div>
+      </Link>
 
       <div className="p-6">
         <div className="flex items-center gap-2 mb-2">
@@ -52,7 +57,9 @@ export default function ProductCard({ product, categoryName, variant = 'default'
             <span className="text-xs text-gray-400">• {product.materials.slice(0, 2).join(', ')}</span>
           )}
         </div>
-        <h3 className={`font-semibold mb-2 ${variant === 'featured' ? 'text-2xl' : 'text-xl'}`}>{product.name}</h3>
+        <h3 className={`font-semibold mb-2 ${variant === 'featured' ? 'text-2xl' : 'text-xl'} hover:text-amber-600 transition-colors`}>
+          <Link to={`/products/${product.id}`}>{product.name}</Link>
+        </h3>
         <p className="text-gray-600 mb-4 text-sm line-clamp-2">{product.description}</p>
         <div className="flex items-center gap-2 mb-4">
           {salePrice && <span className="text-lg text-gray-400 line-through">${product.price.toFixed(2)}</span>}

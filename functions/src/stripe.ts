@@ -26,6 +26,7 @@ interface FirestoreProduct {
   salePercent?: number;
   image?: string;
   inStock?: boolean;
+  stockQty?: number;
   weightLb?: number;
 }
 
@@ -337,6 +338,26 @@ export const stripeWebhook = onRequest(
           stripePaymentIntentId: pi.id,
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
+
+        // Atomically decrement stockQty for each purchased product
+        const orderForStock = await db.collection("orders").doc(orderId).get();
+        const orderItemsForStock = (orderForStock.data() as {items?: Array<{productId: string; quantity: number}>})?.items ?? [];
+        await Promise.all(
+          orderItemsForStock.map(async (item) => {
+            const productRef = db.collection("products").doc(item.productId);
+            await db.runTransaction(async (tx) => {
+              const snap = await tx.get(productRef);
+              if (!snap.exists) return;
+              const product = snap.data() as FirestoreProduct;
+              if (typeof product.stockQty !== "number") return; // no tracking
+              const newQty = Math.max(0, product.stockQty - item.quantity);
+              tx.update(productRef, {
+                stockQty: newQty,
+                ...(newQty === 0 ? {inStock: false} : {}),
+              });
+            });
+          })
+        );
 
         // Fetch items for confirmation email
         const orderSnap = await db.collection("orders").doc(orderId).get();

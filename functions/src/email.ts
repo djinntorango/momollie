@@ -194,6 +194,95 @@ export async function sendOrderConfirmation(
 }
 
 // ---------------------------------------------------------------------------
+// Contact form notification (to hello@momollie.me, reply-to = customer)
+// ---------------------------------------------------------------------------
+
+export interface ContactNotificationData {
+  customerName: string
+  customerEmail: string
+  subject: string
+  message: string
+}
+
+export async function sendContactNotification(
+  apiKey: string,
+  data: ContactNotificationData
+): Promise<void> {
+  const resend = new Resend(apiKey);
+
+  const body = `
+    <h1 style="margin:0 0 4px;font-size:22px;color:${BRAND_BROWN};">New message from your site</h1>
+    <p style="margin:0 0 24px;font-size:14px;color:#9B8778;">Hit Reply to respond directly to ${data.customerName}.</p>
+
+    <div style="background:#fff;border:1px solid #EDE8E1;border-radius:6px;padding:16px 20px;margin-bottom:20px;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="font-size:12px;color:#9B8778;text-transform:uppercase;letter-spacing:1px;width:80px;padding-bottom:8px;">From</td>
+          <td style="font-size:14px;color:#2D1F14;padding-bottom:8px;">${data.customerName} &lt;${data.customerEmail}&gt;</td>
+        </tr>
+        <tr>
+          <td style="font-size:12px;color:#9B8778;text-transform:uppercase;letter-spacing:1px;">Subject</td>
+          <td style="font-size:14px;color:#2D1F14;">${data.subject}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="background:#fff;border:1px solid #EDE8E1;border-radius:6px;padding:20px;white-space:pre-wrap;font-size:14px;color:#2D1F14;line-height:1.7;">
+${data.message}
+    </div>
+  `;
+
+  await resend.emails.send({
+    from: `Momollie Contact <site@momollie.me>`,
+    to: "hello@momollie.me",
+    replyTo: `${data.customerName} <${data.customerEmail}>`,
+    subject: `[Contact] ${data.subject} — ${data.customerName}`,
+    html: emailShell("New contact message", body),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Order note (from hello@momollie.me to customer — personal, not automated)
+// ---------------------------------------------------------------------------
+
+export interface OrderNoteData {
+  orderId: string
+  customerName: string
+  customerEmail: string
+  subject: string
+  message: string
+}
+
+export async function sendOrderNoteEmail(
+  apiKey: string,
+  data: OrderNoteData
+): Promise<void> {
+  const resend = new Resend(apiKey);
+  const shortId = data.orderId.slice(0, 8).toUpperCase();
+
+  const body = `
+    <p style="margin:0 0 20px;font-size:15px;color:#2D1F14;">Hi ${data.customerName},</p>
+
+    <div style="white-space:pre-wrap;font-size:15px;color:#2D1F14;line-height:1.8;margin-bottom:28px;">
+${data.message}
+    </div>
+
+    <p style="margin:0;font-size:13px;color:#9B8778;border-top:1px solid #EDE8E1;padding-top:16px;">
+      This note is regarding your order <strong style="color:${BRAND_BROWN};">#${shortId}</strong>.
+      Reply directly to this email and it will reach us at hello@momollie.me.
+    </p>
+  `;
+
+  await resend.emails.send({
+    from: `Dear Momollie <hello@momollie.me>`,
+    to: data.customerEmail,
+    replyTo: "Dear Momollie <hello@momollie.me>",
+    subject: data.subject,
+    html: emailShell(data.subject, body),
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Shipping notification
 // ---------------------------------------------------------------------------
 

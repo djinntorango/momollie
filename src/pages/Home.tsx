@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import Testimonials from '@/components/Testimonials'
 
 export default function Home() {
   return (
@@ -49,6 +50,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <Testimonials />
 
       {/* Blog Preview */}
       <section className="py-16">

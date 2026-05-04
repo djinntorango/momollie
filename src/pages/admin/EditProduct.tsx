@@ -24,6 +24,7 @@ export default function EditProduct() {
     const widthIn = parseFloat(data.widthIn)
     const heightIn = parseFloat(data.heightIn)
     const weightLb = parseFloat(data.weightLb)
+    const validImages = data.images.filter(img => img.url.trim())
     await updateProduct(id!, {
       name: data.name,
       category: data.category,
@@ -38,8 +39,11 @@ export default function EditProduct() {
       weightLb,
       careInstructions: data.careInstructions.filter(Boolean),
       inStock: data.inStock,
+      stockQty: data.stockQty !== '' ? parseInt(data.stockQty) : undefined,
       etsyUrl: data.etsyUrl || undefined,
-      image: data.image,
+      image: validImages[0]?.url ?? '',
+      images: validImages,
+      videoUrl: data.videoUrl || undefined,
     })
     navigate('/admin/products')
   }

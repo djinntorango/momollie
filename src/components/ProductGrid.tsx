@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import type { Product } from '@/data/products';
 import { useCart } from '@/context/CartContext'
 
@@ -104,8 +105,12 @@ export default function ProductGrid({ products }: ProductGridProps) {
                 key={product.id}
                 className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1"
               >
-                <div className="relative h-64">
-                  <img src={product.image} alt={product.name} className="absolute inset-0 w-full h-full object-cover" />
+                <Link to={`/products/${product.id}`} className="block relative h-64">
+                  <img
+                    src={product.images?.[0]?.url ?? product.image}
+                    alt={product.images?.[0]?.alt ?? product.name}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
                   {!product.inStock && (
                     <div className="absolute top-3 left-3 bg-[#C87855] text-white px-3 py-1 rounded-full text-sm font-medium shadow-md">
                       Out of Stock
@@ -116,7 +121,7 @@ export default function ProductGrid({ products }: ProductGridProps) {
                       {product.salePercent}% Off
                     </div>
                   )}
-                </div>
+                </Link>
                 <div className="p-6">
                   <div className="flex items-center gap-2 mb-2">
                     {product.materials.includes('Organic cotton') && (
@@ -125,8 +130,8 @@ export default function ProductGrid({ products }: ProductGridProps) {
                       </span>
                     )}
                   </div>
-                  <h3 className="text-xl font-semibold mt-2 mb-2 text-[#3E2C1F]">
-                    {product.name}
+                  <h3 className="text-xl font-semibold mt-2 mb-2 text-[#3E2C1F] hover:text-[#E8B55F] transition-colors">
+                    <Link to={`/products/${product.id}`}>{product.name}</Link>
                   </h3>
                   <p className="text-[#6B5B4F] mb-4 text-sm line-clamp-2">
                     {product.description}

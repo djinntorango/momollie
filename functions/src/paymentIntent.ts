@@ -22,6 +22,7 @@ interface FirestoreProduct {
   salePercent?: number;
   image?: string;
   inStock?: boolean;
+  stockQty?: number;
   weightLb?: number;
 }
 
@@ -66,6 +67,9 @@ export const createPaymentIntent = onCall(
       }
       const product = snap.data() as FirestoreProduct;
       if (product.inStock === false) {
+        throw new HttpsError("failed-precondition", `"${product.name}" is out of stock`);
+      }
+      if (typeof product.stockQty === "number" && product.stockQty <= 0) {
         throw new HttpsError("failed-precondition", `"${product.name}" is out of stock`);
       }
       if (!product.weightLb) {
@@ -204,7 +208,40 @@ export const finalizePaymentIntent = onCall(
 
     const selectedRate = shippingTier === "priority" ? rates.priority : rates.standard;
     const shippingCostCents = selectedRate.amountCents;
-    const totalCents = subtotalCents + shippingCostCents;
+
+    // Calculate tax for the destination ZIP
+    let taxCents = 0;
+    let taxError: string | null = null;
+    try {
+      const taxCalc = await stripe.tax.calculations.create({
+        currency: "usd",
+        line_items: [
+          {
+            amount: subtotalCents,
+            reference: "items",
+            tax_code: "txcd_99999999", // general physical goods
+          },
+          {
+            amount: shippingCostCents,
+            reference: "shipping",
+            tax_code: "txcd_92010001", // shipping / freight
+          },
+        ],
+        customer_details: {
+          address: {postal_code: destinationZip, country: "US"},
+          address_source: "shipping",
+        },
+        expand: ["line_items.data.tax_breakdown"],
+      });
+      taxCents = taxCalc.tax_amount_exclusive;
+      console.log(`[finalizePaymentIntent] Tax: ${taxCents} cents for ZIP ${destinationZip}`);
+    } catch (taxErr) {
+      const msg = taxErr instanceof Error ? taxErr.message : String(taxErr);
+      console.error("[finalizePaymentIntent] Stripe Tax calculation failed:", msg);
+      taxError = msg;
+    }
+
+    const totalCents = subtotalCents + shippingCostCents + taxCents;
 
     // Update PaymentIntent with final amount
     await stripe.paymentIntents.update(paymentIntentId, {
@@ -214,6 +251,7 @@ export const finalizePaymentIntent = onCall(
         shippingTier,
         shippingCostCents: String(shippingCostCents),
         shippingServiceLevel: selectedRate.serviceLevel,
+        taxCents: String(taxCents),
       },
     });
 
@@ -221,6 +259,7 @@ export const finalizePaymentIntent = onCall(
     await db.collection("orders").doc(orderId).update({
       shippingTier,
       total: totalCents / 100,
+      taxAmount: taxCents / 100,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
@@ -228,6 +267,8 @@ export const finalizePaymentIntent = onCall(
       totalCents,
       shippingCostCents,
       shippingServiceLevel: selectedRate.serviceLevel,
+      taxCents,
+      taxError,
     };
   }
 );

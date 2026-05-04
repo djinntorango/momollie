@@ -19,6 +19,7 @@ export default function Navbar() {
             <Link to="/products" className="text-[#6B5B4F] hover:text-[#E8B55F] font-medium transition-colors">Products</Link>
             <Link to="/blog" className="text-[#6B5B4F] hover:text-[#E8B55F] font-medium transition-colors">Blog</Link>
             <Link to="/about" className="text-[#6B5B4F] hover:text-[#E8B55F] font-medium transition-colors">About</Link>
+            <Link to="/contact" className="text-[#6B5B4F] hover:text-[#E8B55F] font-medium transition-colors">Contact</Link>
             <button
               onClick={() => navigate('/cart')}
               className="relative text-[#6B5B4F] hover:text-[#E8B55F] transition-colors"
@@ -66,6 +67,7 @@ export default function Navbar() {
             <Link to="/products" className="block text-[#6B5B4F] hover:text-[#E8B55F] font-medium" onClick={() => setIsMenuOpen(false)}>Products</Link>
             <Link to="/blog" className="block text-[#6B5B4F] hover:text-[#E8B55F] font-medium" onClick={() => setIsMenuOpen(false)}>Blog</Link>
             <Link to="/about" className="block text-[#6B5B4F] hover:text-[#E8B55F] font-medium" onClick={() => setIsMenuOpen(false)}>About</Link>
+            <Link to="/contact" className="block text-[#6B5B4F] hover:text-[#E8B55F] font-medium" onClick={() => setIsMenuOpen(false)}>Contact</Link>
             <Link to="/cart" className="block text-[#6B5B4F] hover:text-[#E8B55F] font-medium" onClick={() => setIsMenuOpen(false)}>
               Cart{itemCount > 0 ? ` (${itemCount})` : ''}
             </Link>

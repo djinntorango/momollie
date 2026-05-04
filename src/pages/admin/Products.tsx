@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getProducts, deleteProduct } from '@/lib/productService'
+import { getProducts, deleteProduct, updateProduct } from '@/lib/productService'
 import type { Product } from '@/data/products'
 import { categories } from '@/data/products'
 
@@ -8,10 +8,20 @@ function categoryName(id: string) {
   return categories.find((c) => c.id === id)?.name ?? id
 }
 
+function StockBadge({ qty }: { qty: number | undefined }) {
+  if (qty === undefined) return null
+  if (qty === 0) return <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700">0</span>
+  if (qty <= 3) return <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-700">{qty}</span>
+  return <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700">{qty}</span>
+}
+
 export default function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([])
   const [fetching, setFetching] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [savingStockId, setSavingStockId] = useState<string | null>(null)
+  // draft stock values while user is typing
+  const [stockDraft, setStockDraft] = useState<Record<string, string>>({})
 
   useEffect(() => {
     getProducts()
@@ -30,6 +40,41 @@ export default function AdminProducts() {
     } finally {
       setDeletingId(null)
     }
+  }
+
+  const commitStock = async (product: Product, rawVal: string) => {
+    const trimmed = rawVal.trim()
+    const qty = trimmed === '' ? undefined : Math.max(0, parseInt(trimmed) || 0)
+    // no-op if unchanged
+    if (qty === product.stockQty) {
+      setStockDraft((d) => { const n = { ...d }; delete n[product.id]; return n })
+      return
+    }
+    setSavingStockId(product.id)
+    try {
+      await updateProduct(product.id, {
+        stockQty: qty,
+        inStock: qty === undefined ? product.inStock : qty > 0,
+      })
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === product.id
+            ? { ...p, stockQty: qty, inStock: qty === undefined ? p.inStock : qty > 0 }
+            : p
+        )
+      )
+      setStockDraft((d) => { const n = { ...d }; delete n[product.id]; return n })
+    } catch {
+      alert('Failed to update stock. Please try again.')
+    } finally {
+      setSavingStockId(null)
+    }
+  }
+
+  const adjustStock = (product: Product, delta: number) => {
+    const current = product.stockQty ?? 0
+    const next = Math.max(0, current + delta)
+    commitStock(product, String(next))
   }
 
   return (
@@ -71,7 +116,7 @@ export default function AdminProducts() {
                 <th className="text-left px-6 py-3 text-gray-500 font-medium">Product</th>
                 <th className="text-left px-4 py-3 text-gray-500 font-medium hidden md:table-cell">Category</th>
                 <th className="text-left px-4 py-3 text-gray-500 font-medium">Price</th>
-                <th className="text-left px-4 py-3 text-gray-500 font-medium hidden sm:table-cell">Stock</th>
+                <th className="text-left px-4 py-3 text-gray-500 font-medium hidden sm:table-cell">Inventory</th>
                 <th className="px-4 py-3 text-gray-500 font-medium text-right">Actions</th>
               </tr>
             </thead>
@@ -98,9 +143,38 @@ export default function AdminProducts() {
                     )}
                   </td>
                   <td className="px-4 py-4 hidden sm:table-cell">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${product.inStock ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-                      {product.inStock ? 'In Stock' : 'Out of Stock'}
-                    </span>
+                    {product.stockQty !== undefined ? (
+                      // Quantity tracking mode: show +/- controls
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => adjustStock(product, -1)}
+                          disabled={savingStockId === product.id || product.stockQty === 0}
+                          className="w-6 h-6 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-40 text-sm leading-none"
+                          title="Remove 1"
+                        >−</button>
+                        <input
+                          type="number" min="0"
+                          value={stockDraft[product.id] ?? String(product.stockQty)}
+                          onChange={(e) => setStockDraft((d) => ({ ...d, [product.id]: e.target.value }))}
+                          onBlur={(e) => commitStock(product, e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                          disabled={savingStockId === product.id}
+                          className="w-14 text-center px-1 py-0.5 border border-gray-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#E8B55F] text-gray-800 disabled:opacity-60"
+                        />
+                        <button
+                          onClick={() => adjustStock(product, 1)}
+                          disabled={savingStockId === product.id}
+                          className="w-6 h-6 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-40 text-sm leading-none"
+                          title="Add 1"
+                        >+</button>
+                        <StockBadge qty={product.stockQty} />
+                      </div>
+                    ) : (
+                      // No quantity tracking: show simple in-stock badge
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${product.inStock ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+                        {product.inStock ? 'In Stock' : 'Out of Stock'}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-4 text-right">
                     <div className="flex items-center justify-end gap-3">

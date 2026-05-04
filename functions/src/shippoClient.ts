@@ -24,6 +24,7 @@ export interface ShippoRate {
   amount: string;
   provider: string;
   servicelevel: {name: string; token: string};
+  estimated_days?: number;
 }
 
 export interface ShippoShipmentResponse {
