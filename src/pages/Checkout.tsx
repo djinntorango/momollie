@@ -11,6 +11,7 @@ import {
 import { httpsCallable } from 'firebase/functions'
 import { functions } from '@/lib/firebase'
 import { useCart } from '@/context/CartContext'
+import { saveMarketingConsent } from '@/lib/marketingService'
 
 // Loaded lazily inside the component so Stripe.js isn't injected on every page
 let stripePromise: ReturnType<typeof loadStripe> | null = null
@@ -113,6 +114,7 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
 
   // Step 1
   const [email, setEmail] = useState('')
+  const [marketingOptIn, setMarketingOptIn] = useState(false)
 
   // Step 2
   const [address, setAddress] = useState<AddressValue | null>(null)
@@ -282,9 +284,23 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
           autoComplete="email"
           autoFocus
         />
+        <label className="flex items-start gap-3 mt-4 cursor-pointer group">
+          <input
+            type="checkbox"
+            checked={marketingOptIn}
+            onChange={(e) => setMarketingOptIn(e.target.checked)}
+            className="mt-0.5 w-4 h-4 accent-[#E8B55F] flex-shrink-0"
+          />
+          <span className="text-xs text-[#9B8B7E] group-hover:text-[#6B5B4F] transition-colors leading-relaxed">
+            Keep me updated on new products and restocks. No spam — unsubscribe anytime.
+          </span>
+        </label>
         <button
           type="button"
-          onClick={() => setStep(2)}
+          onClick={() => {
+            if (marketingOptIn) saveMarketingConsent(email).catch(() => {/* non-critical */})
+            setStep(2)
+          }}
           disabled={!email.includes('@')}
           className="mt-4 w-full py-3 bg-[#3E2C1F] text-white rounded-full font-medium hover:bg-[#2D1F15] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >

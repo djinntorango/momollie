@@ -11,6 +11,8 @@ import CheckoutSuccess from './pages/CheckoutSuccess'
 import CheckoutCancel from './pages/CheckoutCancel'
 import Contact from './pages/Contact'
 import ProductDetail from './pages/ProductDetail'
+import Terms from './pages/Terms'
+import Privacy from './pages/Privacy'
 import AdminLogin from './pages/admin/Login'
 import AdminShell from './pages/admin/AdminShell'
 import AdminProducts from './pages/admin/Products'
@@ -55,6 +57,8 @@ export default function App() {
             <Route path="/checkout/success" element={<CheckoutSuccess />} />
             <Route path="/checkout/cancel" element={<CheckoutCancel />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
           </Route>
 
           {/* Admin portal */}

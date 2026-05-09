@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, Link } from 'react-router-dom'
 import Navbar from './Navbar'
 import PromoPopup from './PromoPopup'
 
@@ -20,7 +20,16 @@ export default function Layout() {
           >
             hello@momollie.me
           </a>
-          <p className="mt-4 text-xs text-white/30">
+          <div className="flex items-center justify-center gap-4 mt-4">
+            <Link to="/terms" className="text-xs text-white/40 hover:text-white/70 transition-colors">
+              Terms of Service
+            </Link>
+            <span className="text-white/20">·</span>
+            <Link to="/privacy" className="text-xs text-white/40 hover:text-white/70 transition-colors">
+              Privacy Policy
+            </Link>
+          </div>
+          <p className="mt-3 text-xs text-white/30">
             © {new Date().getFullYear()} Dear Momollie · All rights reserved
           </p>
         </div>
