@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { getProducts, deleteProduct, updateProduct } from '@/lib/productService'
 import type { Product } from '@/data/products'
 import { categories } from '@/data/products'
+import { useLang } from '@/context/LangContext'
 
 function categoryName(id: string) {
   return categories.find((c) => c.id === id)?.name ?? id
@@ -16,6 +17,7 @@ function StockBadge({ qty }: { qty: number | undefined }) {
 }
 
 export default function AdminProducts() {
+  const { t } = useLang()
   const [products, setProducts] = useState<Product[]>([])
   const [fetching, setFetching] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -30,13 +32,13 @@ export default function AdminProducts() {
   }, [])
 
   const handleDelete = async (product: Product) => {
-    if (!confirm(`Delete "${product.name}"? This cannot be undone.`)) return
+    if (!confirm(t('products.confirmDelete', { name: product.name }))) return
     setDeletingId(product.id)
     try {
       await deleteProduct(product.id)
       setProducts((prev) => prev.filter((p) => p.id !== product.id))
     } catch {
-      alert('Failed to delete product. Please try again.')
+      alert(t('products.failedDelete'))
     } finally {
       setDeletingId(null)
     }
@@ -65,7 +67,7 @@ export default function AdminProducts() {
       )
       setStockDraft((d) => { const n = { ...d }; delete n[product.id]; return n })
     } catch {
-      alert('Failed to update stock. Please try again.')
+      alert(t('products.failedStock'))
     } finally {
       setSavingStockId(null)
     }
@@ -81,16 +83,16 @@ export default function AdminProducts() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Products</h1>
+          <h1 className="text-2xl font-bold text-gray-800">{t('products.title')}</h1>
           <p className="text-gray-500 text-sm mt-1">
-            {products.length} listing{products.length !== 1 ? 's' : ''}
+            {products.length} {products.length !== 1 ? t('products.listings') : t('products.listing')}
           </p>
         </div>
         <Link
           to="/admin/products/new"
           className="bg-[#E8B55F] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#D4A04D] transition-colors shadow-sm"
         >
-          + New Product
+          {t('products.new')}
         </Link>
       </div>
 
@@ -100,12 +102,12 @@ export default function AdminProducts() {
         </div>
       ) : products.length === 0 ? (
         <div className="text-center py-24 bg-white rounded-2xl border border-gray-100 shadow-sm">
-          <p className="text-gray-400 mb-4 text-lg">No products yet.</p>
+          <p className="text-gray-400 mb-4 text-lg">{t('products.noProducts')}</p>
           <Link
             to="/admin/products/new"
             className="inline-block bg-[#E8B55F] text-white px-6 py-2.5 rounded-lg font-medium hover:bg-[#D4A04D] transition-colors"
           >
-            Create your first listing
+            {t('products.createFirst')}
           </Link>
         </div>
       ) : (
@@ -113,11 +115,11 @@ export default function AdminProducts() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="text-left px-6 py-3 text-gray-500 font-medium">Product</th>
-                <th className="text-left px-4 py-3 text-gray-500 font-medium hidden md:table-cell">Category</th>
-                <th className="text-left px-4 py-3 text-gray-500 font-medium">Price</th>
-                <th className="text-left px-4 py-3 text-gray-500 font-medium hidden sm:table-cell">Inventory</th>
-                <th className="px-4 py-3 text-gray-500 font-medium text-right">Actions</th>
+                <th className="text-left px-6 py-3 text-gray-500 font-medium">{t('products.colProduct')}</th>
+                <th className="text-left px-4 py-3 text-gray-500 font-medium hidden md:table-cell">{t('products.colCategory')}</th>
+                <th className="text-left px-4 py-3 text-gray-500 font-medium">{t('products.colPrice')}</th>
+                <th className="text-left px-4 py-3 text-gray-500 font-medium hidden sm:table-cell">{t('products.colInventory')}</th>
+                <th className="px-4 py-3 text-gray-500 font-medium text-right">{t('products.colActions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -150,7 +152,7 @@ export default function AdminProducts() {
                           onClick={() => adjustStock(product, -1)}
                           disabled={savingStockId === product.id || product.stockQty === 0}
                           className="w-6 h-6 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-40 text-sm leading-none"
-                          title="Remove 1"
+                          title={t('products.removeOne')}
                         >−</button>
                         <input
                           type="number" min="0"
@@ -165,14 +167,14 @@ export default function AdminProducts() {
                           onClick={() => adjustStock(product, 1)}
                           disabled={savingStockId === product.id}
                           className="w-6 h-6 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-40 text-sm leading-none"
-                          title="Add 1"
+                          title={t('products.addOne')}
                         >+</button>
                         <StockBadge qty={product.stockQty} />
                       </div>
                     ) : (
                       // No quantity tracking: show simple in-stock badge
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${product.inStock ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-                        {product.inStock ? 'In Stock' : 'Out of Stock'}
+                        {product.inStock ? t('products.inStock') : t('products.outOfStock')}
                       </span>
                     )}
                   </td>
@@ -182,14 +184,14 @@ export default function AdminProducts() {
                         to={`/admin/products/${product.id}/edit`}
                         className="text-[#E8B55F] hover:text-[#D4A04D] font-medium transition-colors"
                       >
-                        Edit
+                        {t('products.edit')}
                       </Link>
                       <button
                         onClick={() => handleDelete(product)}
                         disabled={deletingId === product.id}
                         className="text-red-400 hover:text-red-600 font-medium transition-colors disabled:opacity-50"
                       >
-                        {deletingId === product.id ? 'Deleting...' : 'Delete'}
+                        {deletingId === product.id ? t('products.deleting') : t('products.delete')}
                       </button>
                     </div>
                   </td>

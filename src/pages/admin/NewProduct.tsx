@@ -1,9 +1,11 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { createProduct } from '@/lib/productService'
 import ProductForm, { type ProductFormData } from './ProductForm'
+import { useLang } from '@/context/LangContext'
 
 export default function NewProduct() {
   const navigate = useNavigate()
+  const { t } = useLang()
 
   const handleSubmit = async (data: ProductFormData) => {
     const lengthIn = parseFloat(data.lengthIn)
@@ -38,13 +40,13 @@ export default function NewProduct() {
     <div className="p-8">
       <div className="flex items-center gap-3 mb-6">
         <Link to="/admin/products" className="text-gray-400 hover:text-gray-600 transition-colors text-sm">
-          ← Products
+          {t('newProduct.back')}
         </Link>
         <span className="text-gray-300">/</span>
-        <h1 className="text-lg font-semibold text-gray-800">New Product</h1>
+        <h1 className="text-lg font-semibold text-gray-800">{t('newProduct.title')}</h1>
       </div>
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 md:p-8">
-        <ProductForm onSubmit={handleSubmit} submitLabel="Create Product" />
+        <ProductForm onSubmit={handleSubmit} submitLabel={t('newProduct.submit')} />
       </div>
     </div>
   )

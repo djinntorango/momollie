@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
+import { useLang } from '@/context/LangContext'
 
 export default function AdminLogin() {
   const { user, loading, signIn } = useAuth()
+  const { lang, setLang, t } = useLang()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -24,7 +26,7 @@ export default function AdminLogin() {
       await signIn(email, password)
       navigate('/admin/products', { replace: true })
     } catch {
-      setError('Invalid email or password.')
+      setError(t('login.invalidCredentials'))
     } finally {
       setSubmitting(false)
     }
@@ -41,14 +43,36 @@ export default function AdminLogin() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#FFF8E7] to-[#F5E6D3] flex items-center justify-center px-4">
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+        {/* Language toggle */}
+        <div className="flex justify-end mb-4">
+          <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setLang('en')}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                lang === 'en' ? 'bg-[#E8B55F] text-white' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              EN
+            </button>
+            <button
+              onClick={() => setLang('zh')}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                lang === 'zh' ? 'bg-[#E8B55F] text-white' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              中文
+            </button>
+          </div>
+        </div>
+
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-[#3E2C1F]">Momollie Admin</h1>
-          <p className="text-[#6B5B4F] mt-2">Sign in to manage your listings</p>
+          <h1 className="text-3xl font-bold text-[#3E2C1F]">{t('login.title')}</h1>
+          <p className="text-[#6B5B4F] mt-2">{t('login.subtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-[#3E2C1F] mb-1">Email</label>
+            <label className="block text-sm font-medium text-[#3E2C1F] mb-1">{t('login.email')}</label>
             <input
               type="email"
               value={email}
@@ -61,7 +85,7 @@ export default function AdminLogin() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[#3E2C1F] mb-1">Password</label>
+            <label className="block text-sm font-medium text-[#3E2C1F] mb-1">{t('login.password')}</label>
             <input
               type="password"
               value={password}
@@ -82,7 +106,7 @@ export default function AdminLogin() {
             disabled={submitting}
             className="w-full bg-[#E8B55F] text-white py-3 rounded-lg font-medium hover:bg-[#D4A04D] transition-colors disabled:opacity-60"
           >
-            {submitting ? 'Signing in...' : 'Sign In'}
+            {submitting ? t('login.signingIn') : t('login.signIn')}
           </button>
         </form>
       </div>

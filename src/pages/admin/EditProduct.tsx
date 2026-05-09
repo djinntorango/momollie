@@ -3,10 +3,12 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { getProduct, updateProduct } from '@/lib/productService'
 import type { Product } from '@/data/products'
 import ProductForm, { type ProductFormData } from './ProductForm'
+import { useLang } from '@/context/LangContext'
 
 export default function EditProduct() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
+  const { t } = useLang()
   const [product, setProduct] = useState<Product | null>(null)
   const [fetching, setFetching] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -71,13 +73,13 @@ export default function EditProduct() {
     <div className="p-8">
       <div className="flex items-center gap-3 mb-6">
         <Link to="/admin/products" className="text-gray-400 hover:text-gray-600 transition-colors text-sm">
-          ← Products
+          {t('editProduct.back')}
         </Link>
         <span className="text-gray-300">/</span>
         <h1 className="text-lg font-semibold text-gray-800 truncate">{product?.name}</h1>
       </div>
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 md:p-8">
-        {product && <ProductForm initial={product} onSubmit={handleSubmit} submitLabel="Save Changes" />}
+        {product && <ProductForm initial={product} onSubmit={handleSubmit} submitLabel={t('editProduct.submit')} />}
       </div>
     </div>
   )

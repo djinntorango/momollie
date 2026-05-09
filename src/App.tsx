@@ -23,13 +23,16 @@ import AdminAccounting from './pages/admin/Accounting'
 import AdminTestimonials from './pages/admin/Testimonials'
 import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
+import { LangProvider } from './context/LangContext'
 import CartDrawer from './components/CartDrawer'
 
 function AdminLayout() {
   return (
-    <AuthProvider>
-      <Outlet />
-    </AuthProvider>
+    <LangProvider>
+      <AuthProvider>
+        <Outlet />
+      </AuthProvider>
+    </LangProvider>
   )
 }
 

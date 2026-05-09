@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { getProducts, applyProductSale, removeProductSale } from '@/lib/productService'
 import type { Product } from '@/data/products'
+import { useLang } from '@/context/LangContext'
 
 export default function Sales() {
+  const { t } = useLang()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -35,8 +37,8 @@ export default function Sales() {
 
   const handleApply = async () => {
     const pct = parseFloat(percent)
-    if (!pct || pct <= 0 || pct >= 100) return alert('Enter a percentage between 1 and 99.')
-    if (selected.size === 0) return alert('Select at least one product.')
+    if (!pct || pct <= 0 || pct >= 100) return alert(t('sales.errPercent'))
+    if (selected.size === 0) return alert(t('sales.errSelect'))
     setSaving(true)
     try {
       await applyProductSale([...selected], pct)
@@ -49,7 +51,7 @@ export default function Sales() {
   }
 
   const handleRemove = async () => {
-    if (selected.size === 0) return alert('Select at least one product.')
+    if (selected.size === 0) return alert(t('sales.errSelect'))
     setSaving(true)
     try {
       await removeProductSale([...selected])
@@ -64,8 +66,8 @@ export default function Sales() {
   return (
     <div className="p-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Sales</h1>
-        <p className="text-gray-500 text-sm mt-1">Apply percentage discounts to products</p>
+        <h1 className="text-2xl font-bold text-gray-800">{t('sales.title')}</h1>
+        <p className="text-gray-500 text-sm mt-1">{t('sales.subtitle')}</p>
       </div>
 
       {loading ? (
@@ -86,10 +88,10 @@ export default function Sales() {
                       className="w-4 h-4 accent-[#E8B55F]"
                     />
                   </th>
-                  <th className="px-4 py-3 text-left text-gray-500 font-medium">Product</th>
-                  <th className="px-4 py-3 text-left text-gray-500 font-medium">Price</th>
-                  <th className="px-4 py-3 text-left text-gray-500 font-medium">Current Sale</th>
-                  <th className="px-4 py-3 text-left text-gray-500 font-medium">Sale Price</th>
+                  <th className="px-4 py-3 text-left text-gray-500 font-medium">{t('sales.colProduct')}</th>
+                  <th className="px-4 py-3 text-left text-gray-500 font-medium">{t('sales.colPrice')}</th>
+                  <th className="px-4 py-3 text-left text-gray-500 font-medium">{t('sales.colCurrentSale')}</th>
+                  <th className="px-4 py-3 text-left text-gray-500 font-medium">{t('sales.colSalePrice')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -129,7 +131,7 @@ export default function Sales() {
                             {product.salePercent}% off
                           </span>
                         ) : (
-                          <span className="text-gray-400 text-xs">None</span>
+                          <span className="text-gray-400 text-xs">{t('sales.none')}</span>
                         )}
                       </td>
                       <td className="px-4 py-4 font-medium text-green-600">
@@ -145,7 +147,7 @@ export default function Sales() {
           {/* Action bar */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-wrap items-center gap-4">
             <span className="text-sm text-gray-500">
-              {selected.size} product{selected.size !== 1 ? 's' : ''} selected
+              {t('sales.selectedCount', { count: selected.size, plural: selected.size !== 1 ? 's' : '' })}
             </span>
             <div className="flex items-center gap-2 ml-auto">
               <input
@@ -156,20 +158,20 @@ export default function Sales() {
                 onChange={(e) => setPercent(e.target.value)}
                 className="w-20 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E8B55F] text-gray-800"
               />
-              <span className="text-sm text-gray-500">% off</span>
+              <span className="text-sm text-gray-500">{t('sales.pctOff')}</span>
               <button
                 onClick={handleApply}
                 disabled={saving || selected.size === 0}
                 className="bg-[#E8B55F] text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-[#D4A04D] transition-colors disabled:opacity-50"
               >
-                {saving ? 'Saving...' : 'Apply Sale'}
+                {saving ? t('sales.saving') : t('sales.applySale')}
               </button>
               <button
                 onClick={handleRemove}
                 disabled={saving || selected.size === 0}
                 className="bg-white border border-red-300 text-red-500 px-5 py-2 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
               >
-                Remove Sale
+                {t('sales.removeSale')}
               </button>
             </div>
           </div>

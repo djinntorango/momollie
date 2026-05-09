@@ -3,6 +3,7 @@ import { httpsCallable } from 'firebase/functions'
 import { functions } from '@/lib/firebase'
 import { getOrders, updateOrder, updateOrderAddress } from '@/lib/orderService'
 import type { Order } from '@/data/products'
+import { useLang } from '@/context/LangContext'
 
 const STATUS_COLORS: Record<Order['status'], string> = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -47,6 +48,7 @@ function BulkLabelPreviewModal({
   onCancel: () => void
   purchasing: boolean
 }) {
+  const { t } = useLang()
   const total = items.reduce((s, i) => s + i.amountUsd, 0)
 
   return (
@@ -56,8 +58,8 @@ function BulkLabelPreviewModal({
         className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-bold text-[#3E2C1F] mb-1">Purchase {items.length} Shipping Labels</h2>
-        <p className="text-sm text-[#9B8B7E] mb-4">Review costs before charging your Shippo account</p>
+        <h2 className="text-lg font-bold text-[#3E2C1F] mb-1">{t('bulkLabel.title', { count: items.length })}</h2>
+        <p className="text-sm text-[#9B8B7E] mb-4">{t('bulkLabel.subtitle')}</p>
 
         <div className="overflow-y-auto flex-1 space-y-2 mb-4">
           {items.map((item) => (
@@ -75,12 +77,12 @@ function BulkLabelPreviewModal({
         </div>
 
         <div className="flex justify-between items-center py-3 border-t border-gray-200 mb-4">
-          <span className="font-semibold text-[#3E2C1F]">Total</span>
+          <span className="font-semibold text-[#3E2C1F]">{t('bulkLabel.total')}</span>
           <span className="text-xl font-bold text-[#3E2C1F]">${total.toFixed(2)}</span>
         </div>
 
         <p className="text-xs text-[#9B8B7E] mb-4">
-          Charged to your Shippo account balance.
+          {t('bulkLabel.shippoCharge')}
         </p>
 
         <div className="flex gap-2">
@@ -90,7 +92,7 @@ function BulkLabelPreviewModal({
             disabled={purchasing}
             className="flex-1 px-4 py-2 border border-gray-200 text-[#3E2C1F] rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
           >
-            Cancel
+            {t('bulkLabel.cancel')}
           </button>
           <button
             type="button"
@@ -104,9 +106,9 @@ function BulkLabelPreviewModal({
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                Purchasing…
+                {t('bulkLabel.purchasing')}
               </>
-            ) : `Purchase ${items.length} Labels — $${total.toFixed(2)}`}
+            ) : t('bulkLabel.purchase', { count: items.length, amount: total.toFixed(2) })}
           </button>
         </div>
       </div>
@@ -125,6 +127,7 @@ function LabelPreviewModal({
   onCancel: () => void
   purchasing: boolean
 }) {
+  const { t } = useLang()
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onCancel}>
       <div className="absolute inset-0 bg-black/40" />
@@ -132,36 +135,39 @@ function LabelPreviewModal({
         className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-bold text-[#3E2C1F] mb-1">Purchase Shipping Label</h2>
+        <h2 className="text-lg font-bold text-[#3E2C1F] mb-1">{t('labelPreview.title')}</h2>
         <p className="text-sm text-[#9B8B7E] mb-5">
-          Order #{preview.orderId.slice(0, 8).toUpperCase()}
+          {t('labelPreview.orderNum', { id: preview.orderId.slice(0, 8).toUpperCase() })}
         </p>
 
         <div className="bg-[#FFF8E7] border border-[#E8B55F]/40 rounded-xl p-4 mb-5 space-y-3">
           <div className="flex justify-between items-center">
-            <span className="text-sm text-[#6B5B4F]">Service</span>
+            <span className="text-sm text-[#6B5B4F]">{t('labelPreview.service')}</span>
             <span className="text-sm font-semibold text-[#3E2C1F]">{preview.serviceLevel}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm text-[#6B5B4F]">Carrier</span>
+            <span className="text-sm text-[#6B5B4F]">{t('labelPreview.carrier')}</span>
             <span className="text-sm font-semibold text-[#3E2C1F]">{preview.carrier}</span>
           </div>
           {preview.estimatedDays !== null && (
             <div className="flex justify-between items-center">
-              <span className="text-sm text-[#6B5B4F]">Est. delivery</span>
+              <span className="text-sm text-[#6B5B4F]">{t('labelPreview.estDelivery')}</span>
               <span className="text-sm font-semibold text-[#3E2C1F]">
-                {preview.estimatedDays} business day{preview.estimatedDays !== 1 ? 's' : ''}
+                {t('labelPreview.businessDays', {
+                  n: preview.estimatedDays,
+                  plural: preview.estimatedDays !== 1 ? 's' : '',
+                })}
               </span>
             </div>
           )}
           <div className="flex justify-between items-center pt-2 border-t border-[#E8B55F]/30">
-            <span className="text-sm font-semibold text-[#3E2C1F]">Label cost</span>
+            <span className="text-sm font-semibold text-[#3E2C1F]">{t('labelPreview.labelCost')}</span>
             <span className="text-xl font-bold text-[#3E2C1F]">${preview.amountUsd.toFixed(2)}</span>
           </div>
         </div>
 
         <p className="text-xs text-[#9B8B7E] mb-5">
-          This amount will be charged to your Shippo account balance.
+          {t('labelPreview.shippoCharge')}
         </p>
 
         <div className="flex gap-2">
@@ -171,7 +177,7 @@ function LabelPreviewModal({
             disabled={purchasing}
             className="flex-1 px-4 py-2 border border-gray-200 text-[#3E2C1F] rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
           >
-            Cancel
+            {t('labelPreview.cancel')}
           </button>
           <button
             type="button"
@@ -185,9 +191,9 @@ function LabelPreviewModal({
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                Purchasing…
+                {t('labelPreview.purchasing')}
               </>
-            ) : `Purchase — $${preview.amountUsd.toFixed(2)}`}
+            ) : t('labelPreview.purchase', { amount: preview.amountUsd.toFixed(2) })}
           </button>
         </div>
       </div>
@@ -211,6 +217,7 @@ interface RefundModalProps {
 }
 
 function RefundModal({ order, onClose, onRefunded }: RefundModalProps) {
+  const { t } = useLang()
   const [amount, setAmount] = useState(order.total.toFixed(2))
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -221,11 +228,11 @@ function RefundModal({ order, onClose, onRefunded }: RefundModalProps) {
     e.preventDefault()
     const dollars = parseFloat(amount)
     if (isNaN(dollars) || dollars <= 0) {
-      setError('Enter a valid amount')
+      setError(t('refund.invalidAmount'))
       return
     }
     if (dollars > order.total) {
-      setError(`Cannot exceed order total ($${order.total.toFixed(2)})`)
+      setError(t('refund.exceedsTotal', { amount: order.total.toFixed(2) }))
       return
     }
     setLoading(true)
@@ -252,7 +259,7 @@ function RefundModal({ order, onClose, onRefunded }: RefundModalProps) {
         className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-bold text-[#3E2C1F] mb-1">Issue Refund</h2>
+        <h2 className="text-lg font-bold text-[#3E2C1F] mb-1">{t('refund.title')}</h2>
         <p className="text-sm text-[#9B8B7E] mb-4">
           {order.customer?.name ?? '—'} · Order #{order.id.slice(0, 8).toUpperCase()}
         </p>
@@ -260,7 +267,7 @@ function RefundModal({ order, onClose, onRefunded }: RefundModalProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-[#3E2C1F] mb-1">
-              Refund amount
+              {t('refund.amount')}
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9B8B7E]">$</span>
@@ -276,13 +283,13 @@ function RefundModal({ order, onClose, onRefunded }: RefundModalProps) {
               />
             </div>
             <p className="mt-1 text-xs text-[#9B8B7E]">
-              Order total: ${order.total.toFixed(2)}
-              {order.refundAmount ? ` · Already refunded: $${order.refundAmount.toFixed(2)}` : ''}
+              {t('refund.orderTotal', { amount: order.total.toFixed(2) })}
+              {order.refundAmount ? ` ${t('refund.alreadyRefunded', { amount: order.refundAmount.toFixed(2) })}` : ''}
             </p>
           </div>
 
           <div className={`text-xs px-3 py-2 rounded-lg ${isFullRefund ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>
-            {isFullRefund ? 'Full refund — order will be marked Cancelled' : 'Partial refund — order status unchanged'}
+            {isFullRefund ? t('refund.fullRefund') : t('refund.partialRefund')}
           </div>
 
           {error && (
@@ -295,7 +302,7 @@ function RefundModal({ order, onClose, onRefunded }: RefundModalProps) {
               onClick={onClose}
               className="flex-1 px-4 py-2 border border-gray-200 text-[#3E2C1F] rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
             >
-              Cancel
+              {t('refund.cancel')}
             </button>
             <button
               type="submit"
@@ -308,9 +315,9 @@ function RefundModal({ order, onClose, onRefunded }: RefundModalProps) {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
-                  Processing…
+                  {t('refund.processing')}
                 </>
-              ) : `Refund $${parseFloat(amount) > 0 ? parseFloat(amount).toFixed(2) : '—'}`}
+              ) : t('refund.submit', { amount: parseFloat(amount) > 0 ? parseFloat(amount).toFixed(2) : '—' })}
             </button>
           </div>
         </form>
@@ -325,6 +332,7 @@ interface SendNoteModalProps {
 }
 
 function SendNoteModal({ order, onClose }: SendNoteModalProps) {
+  const { t } = useLang()
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
@@ -357,7 +365,7 @@ function SendNoteModal({ order, onClose }: SendNoteModalProps) {
         className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-bold text-[#3E2C1F] mb-1">Send Note to Customer</h2>
+        <h2 className="text-lg font-bold text-[#3E2C1F] mb-1">{t('sendNote.title')}</h2>
         <p className="text-sm text-[#9B8B7E] mb-4">
           {order.customer?.name ?? '—'} · {order.customer?.email ?? '—'} · Order #{order.id.slice(0, 8).toUpperCase()}
         </p>
@@ -367,21 +375,21 @@ function SendNoteModal({ order, onClose }: SendNoteModalProps) {
             <svg className="w-10 h-10 text-green-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
-            <p className="text-sm font-medium text-[#3E2C1F] mb-1">Note sent!</p>
+            <p className="text-sm font-medium text-[#3E2C1F] mb-1">{t('sendNote.sent')}</p>
             <p className="text-xs text-[#9B8B7E] mb-4">
-              {order.customer.name} will receive your message from hello@momollie.me
+              {t('sendNote.sentNote', { name: order.customer.name })}
             </p>
             <button
               onClick={onClose}
               className="px-4 py-2 bg-[#3E2C1F] text-white rounded-lg text-sm font-medium hover:bg-[#2D1F15]"
             >
-              Done
+              {t('sendNote.done')}
             </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-[#6B5B4F] mb-1">Subject</label>
+              <label className="block text-xs font-medium text-[#6B5B4F] mb-1">{t('sendNote.subject')}</label>
               <input
                 type="text"
                 value={subject}
@@ -393,17 +401,17 @@ function SendNoteModal({ order, onClose }: SendNoteModalProps) {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-[#6B5B4F] mb-1">Message</label>
+              <label className="block text-xs font-medium text-[#6B5B4F] mb-1">{t('sendNote.message')}</label>
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Write your message here…"
+                placeholder={t('sendNote.placeholder')}
                 required
                 rows={6}
                 className={inp + ' resize-none'}
               />
               <p className="mt-1 text-xs text-[#9B8B7E]">
-                Sent from hello@momollie.me — customer can reply directly to you.
+                {t('sendNote.emailNote')}
               </p>
             </div>
 
@@ -417,7 +425,7 @@ function SendNoteModal({ order, onClose }: SendNoteModalProps) {
                 onClick={onClose}
                 className="flex-1 px-4 py-2 border border-gray-200 text-[#3E2C1F] rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
               >
-                Cancel
+                {t('sendNote.cancel')}
               </button>
               <button
                 type="submit"
@@ -430,9 +438,9 @@ function SendNoteModal({ order, onClose }: SendNoteModalProps) {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
-                    Sending…
+                    {t('sendNote.sending')}
                   </>
-                ) : 'Send Note'}
+                ) : t('sendNote.send')}
               </button>
             </div>
           </form>
@@ -443,6 +451,7 @@ function SendNoteModal({ order, onClose }: SendNoteModalProps) {
 }
 
 function CopyEmailButton({ email }: { email: string }) {
+  const { t } = useLang()
   const [copied, setCopied] = useState(false)
 
   const copy = (e: React.MouseEvent) => {
@@ -456,7 +465,7 @@ function CopyEmailButton({ email }: { email: string }) {
   return (
     <button
       onClick={copy}
-      title={copied ? 'Copied!' : 'Copy email'}
+      title={copied ? t('orders.copied') : t('orders.copyEmail')}
       className="inline-flex items-center gap-1 text-[#9B8B7E] text-xs hover:text-[#3E2C1F] transition-colors group"
     >
       <span className="group-hover:underline">{email}</span>
@@ -475,9 +484,10 @@ function CopyEmailButton({ email }: { email: string }) {
 
 
 function AddressStatusBadge({ order }: { order: Order }) {
+  const { t } = useLang()
   if (order.addressVerified === true) {
     return (
-      <span title="Address verified" className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-100 text-green-600 flex-shrink-0">
+      <span title={t('orders.addressVerified')} className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-100 text-green-600 flex-shrink-0">
         <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
         </svg>
@@ -488,7 +498,7 @@ function AddressStatusBadge({ order }: { order: Order }) {
     const hasIssues = order.addressIssues && order.addressIssues.length > 0
     return (
       <span
-        title={hasIssues ? order.addressIssues!.join('; ') : 'Address invalid'}
+        title={hasIssues ? order.addressIssues!.join('; ') : t('orders.addressInvalid')}
         className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-100 text-red-600 flex-shrink-0"
       >
         <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -514,6 +524,7 @@ interface EditAddressFormProps {
 }
 
 function EditAddressForm({ order, labelError, onSave, onCancel }: EditAddressFormProps) {
+  const { t } = useLang()
   const [fields, setFields] = useState({
     name: order.customer?.name ?? '',
     line1: order.customer?.address.line1 ?? '',
@@ -605,15 +616,15 @@ function EditAddressForm({ order, labelError, onSave, onCancel }: EditAddressFor
         </div>
       )}
 
-      <input className={inp} placeholder="Full name" value={fields.name} onChange={set('name')} required />
-      <input className={inp} placeholder="Address line 1" value={fields.line1} onChange={set('line1')} required />
-      <input className={inp} placeholder="Address line 2 (optional)" value={fields.line2} onChange={set('line2')} />
+      <input className={inp} placeholder={t('address.fullName')} value={fields.name} onChange={set('name')} required />
+      <input className={inp} placeholder={t('address.line1')} value={fields.line1} onChange={set('line1')} required />
+      <input className={inp} placeholder={t('address.line2')} value={fields.line2} onChange={set('line2')} />
       <div className="grid grid-cols-3 gap-1.5">
-        <input className={inp} placeholder="City" value={fields.city} onChange={set('city')} required />
-        <input className={inp} placeholder="State" value={fields.state} onChange={set('state')} required />
-        <input className={inp} placeholder="ZIP" value={fields.zip} onChange={set('zip')} required />
+        <input className={inp} placeholder={t('address.city')} value={fields.city} onChange={set('city')} required />
+        <input className={inp} placeholder={t('address.state')} value={fields.state} onChange={set('state')} required />
+        <input className={inp} placeholder={t('address.zip')} value={fields.zip} onChange={set('zip')} required />
       </div>
-      <input className={inp} placeholder="Country" value={fields.country} onChange={set('country')} required />
+      <input className={inp} placeholder={t('address.country')} value={fields.country} onChange={set('country')} required />
 
       {/* USPS suggestion */}
       {validation && (
@@ -623,7 +634,7 @@ function EditAddressForm({ order, labelError, onSave, onCancel }: EditAddressFor
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
               </svg>
-              Address verified by USPS
+              {t('address.verified')}
             </span>
           ) : (
             <div className="space-y-1">
@@ -632,7 +643,7 @@ function EditAddressForm({ order, labelError, onSave, onCancel }: EditAddressFor
           )}
           {suggestionDiffers && (
             <div className="mt-2 pt-2 border-t border-amber-300">
-              <p className="font-medium mb-1">USPS suggestion:</p>
+              <p className="font-medium mb-1">{t('address.suggestion')}</p>
               <p>{validation.suggested!.street1}{validation.suggested!.street2 ? `, ${validation.suggested!.street2}` : ''}</p>
               <p>{validation.suggested!.city}, {validation.suggested!.state} {validation.suggested!.zip}</p>
               <button
@@ -640,7 +651,7 @@ function EditAddressForm({ order, labelError, onSave, onCancel }: EditAddressFor
                 onClick={applySuggestion}
                 className="mt-1.5 px-2.5 py-1 bg-amber-600 text-white rounded text-xs font-medium hover:bg-amber-700"
               >
-                Use this address
+                {t('address.useThis')}
               </button>
             </div>
           )}
@@ -664,21 +675,21 @@ function EditAddressForm({ order, labelError, onSave, onCancel }: EditAddressFor
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           )}
-          {validating ? 'Checking…' : 'Check with USPS'}
+          {validating ? t('address.checking') : t('address.checkUSPS')}
         </button>
         <button
           type="submit"
           disabled={saving}
           className="px-3 py-1 bg-[#3E2C1F] text-white rounded text-xs font-medium hover:bg-[#2D1F15] disabled:opacity-60"
         >
-          {saving ? 'Saving…' : 'Save Address'}
+          {saving ? t('address.saving') : t('address.save')}
         </button>
         <button
           type="button"
           onClick={onCancel}
           className="px-3 py-1 border border-gray-200 text-[#6B5B4F] rounded text-xs hover:bg-gray-50"
         >
-          Cancel
+          {t('address.cancel')}
         </button>
       </div>
     </form>
@@ -686,6 +697,7 @@ function EditAddressForm({ order, labelError, onSave, onCancel }: EditAddressFor
 }
 
 export default function AdminOrders() {
+  const { t } = useLang()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -955,7 +967,7 @@ export default function AdminOrders() {
       const blob = new Blob([bytes], { type: 'application/pdf' })
       window.open(URL.createObjectURL(blob), '_blank')
     } catch (err) {
-      alert(`Failed to merge labels: ${err instanceof Error ? err.message : String(err)}`)
+      alert(`${t('orders.failedMerge')} ${err instanceof Error ? err.message : String(err)}`)
     } finally {
       setMergingLabels(false)
     }
@@ -975,7 +987,7 @@ export default function AdminOrders() {
         patchOrder(id, { addressVerified: data.isValid, addressIssues: data.issues })
       }
     } catch (err) {
-      alert(`Verification failed: ${err instanceof Error ? err.message : String(err)}`)
+      alert(`${t('orders.failedVerify')} ${err instanceof Error ? err.message : String(err)}`)
     } finally {
       setVerifyLoading(false)
     }
@@ -998,7 +1010,7 @@ export default function AdminOrders() {
       await updateOrder(order.id, { status: 'delivered' })
       patchOrder(order.id, { status: 'delivered' })
     } catch (err) {
-      alert(`Failed to update order: ${err instanceof Error ? err.message : String(err)}`)
+      alert(`${t('orders.failedUpdate')} ${err instanceof Error ? err.message : String(err)}`)
     } finally {
       setDeliveredLoading(null)
     }
@@ -1066,7 +1078,7 @@ export default function AdminOrders() {
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <h1 className="text-2xl font-bold text-[#3E2C1F]">Orders</h1>
+        <h1 className="text-2xl font-bold text-[#3E2C1F]">{t('orders.title')}</h1>
         {unverifiedIds.length > 0 && (
           <button
             onClick={() => handleVerifyAddresses(unverifiedIds)}
@@ -1083,7 +1095,7 @@ export default function AdminOrders() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             )}
-            Verify All Addresses ({unverifiedIds.length})
+            {t('orders.verifyAll', { count: unverifiedIds.length })}
           </button>
         )}
       </div>
@@ -1102,7 +1114,7 @@ export default function AdminOrders() {
                   : 'bg-white border border-gray-200 text-[#6B5B4F] hover:border-[#E8B55F]'
               }`}
             >
-              {s === 'all' ? 'All' : s}
+              {s === 'all' ? t('orders.filterAll') : t(`orders.filter${s.charAt(0).toUpperCase()}${s.slice(1)}`)}
               {s !== 'all' && (
                 <span className="ml-1 opacity-60">
                   ({orders.filter((o) => o.status === s).length})
@@ -1120,7 +1132,7 @@ export default function AdminOrders() {
             onChange={(e) => setDateFrom(e.target.value)}
             className="px-2 py-1 border border-gray-200 rounded-lg text-xs text-[#3E2C1F] focus:outline-none focus:ring-1 focus:ring-[#E8B55F]"
           />
-          <span className="text-xs text-[#9B8B7E]">to</span>
+          <span className="text-xs text-[#9B8B7E]">{t('orders.dateTo')}</span>
           <input
             type="date"
             value={dateTo}
@@ -1132,7 +1144,7 @@ export default function AdminOrders() {
               onClick={() => { setDateFrom(''); setDateTo('') }}
               className="text-xs text-[#9B8B7E] hover:text-[#3E2C1F] transition-colors"
             >
-              Clear
+              {t('orders.clearDates')}
             </button>
           )}
         </div>
@@ -1149,16 +1161,16 @@ export default function AdminOrders() {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-              Creating labels… {bulkProgress.current} of {bulkProgress.total}
+              {t('orders.creatingLabels', { current: bulkProgress.current, total: bulkProgress.total })}
             </>
           ) : (
             <>
               <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              {bulkProgress.total - bulkProgress.errors.length} of {bulkProgress.total} labels created.
+              {t('orders.labelsCreated', { created: bulkProgress.total - bulkProgress.errors.length, total: bulkProgress.total })}
               {bulkProgress.errors.length > 0 && (
-                <span className="ml-1">Failures: {bulkProgress.errors.join(' · ')}</span>
+                <span className="ml-1">{t('orders.failures')} {bulkProgress.errors.join(' · ')}</span>
               )}
             </>
           )}
@@ -1169,7 +1181,7 @@ export default function AdminOrders() {
       {someSelected && (
         <div className="mb-4 flex items-center gap-3 px-4 py-3 bg-[#3E2C1F] text-white rounded-xl flex-wrap">
           <span className="text-sm font-medium flex-1">
-            {selectedIds.size} order{selectedIds.size !== 1 ? 's' : ''} selected
+            {t('orders.selectedCount', { count: selectedIds.size, plural: selectedIds.size !== 1 ? 's' : '' })}
           </span>
 
           {selectedUnverifiedIds.length > 0 && (
@@ -1181,7 +1193,7 @@ export default function AdminOrders() {
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              Verify Addresses
+              {t('orders.verifyAddresses')}
             </button>
           )}
 
@@ -1201,7 +1213,9 @@ export default function AdminOrders() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                 </svg>
               )}
-              {bulkPreviewLoading ? 'Getting rates…' : `Create ${selectedLabelable.length} Label${selectedLabelable.length !== 1 ? 's' : ''}`}
+              {bulkPreviewLoading
+                ? t('orders.gettingRates')
+                : t('orders.createNLabels', { count: selectedLabelable.length, plural: selectedLabelable.length !== 1 ? 's' : '' })}
             </button>
           )}
 
@@ -1221,7 +1235,9 @@ export default function AdminOrders() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                 </svg>
               )}
-              Print {selectedWithLabels.length} Label{selectedWithLabels.length !== 1 ? 's' : ''}
+              {mergingLabels
+                ? t('orders.mergingLabels')
+                : t('orders.printNLabels', { count: selectedWithLabels.length, plural: selectedWithLabels.length !== 1 ? 's' : '' })}
             </button>
           )}
 
@@ -1229,7 +1245,7 @@ export default function AdminOrders() {
             onClick={() => setSelectedIds(new Set())}
             className="text-white/60 hover:text-white text-sm transition-colors"
           >
-            Clear
+            {t('orders.clearSelection')}
           </button>
         </div>
       )}
@@ -1240,7 +1256,7 @@ export default function AdminOrders() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
           </svg>
           <p className="text-[#6B5B4F] text-lg">
-            {orders.length === 0 ? 'No orders yet' : 'No orders match the current filters'}
+            {orders.length === 0 ? t('orders.noOrders') : t('orders.noFiltersMatch')}
           </p>
         </div>
       ) : (
@@ -1254,16 +1270,16 @@ export default function AdminOrders() {
                     checked={allSelected}
                     onChange={toggleSelectAll}
                     className="w-4 h-4 accent-[#E8B55F] cursor-pointer"
-                    title="Select all labelable orders"
+                    title={t('orders.selectAllTitle')}
                   />
                 </th>
-                <th className="text-left px-4 py-3 font-semibold">Order ID</th>
-                <th className="text-left px-4 py-3 font-semibold">Date</th>
-                <th className="text-left px-4 py-3 font-semibold">Customer</th>
-                <th className="text-left px-4 py-3 font-semibold">Items</th>
-                <th className="text-left px-4 py-3 font-semibold">Total</th>
-                <th className="text-left px-4 py-3 font-semibold">Status</th>
-                <th className="text-left px-4 py-3 font-semibold">Actions</th>
+                <th className="text-left px-4 py-3 font-semibold">{t('orders.colOrder')}</th>
+                <th className="text-left px-4 py-3 font-semibold">{t('orders.colDate')}</th>
+                <th className="text-left px-4 py-3 font-semibold">{t('orders.colCustomer')}</th>
+                <th className="text-left px-4 py-3 font-semibold">{t('orders.colItems')}</th>
+                <th className="text-left px-4 py-3 font-semibold">{t('orders.colTotal')}</th>
+                <th className="text-left px-4 py-3 font-semibold">{t('orders.colStatus')}</th>
+                <th className="text-left px-4 py-3 font-semibold">{t('orders.colActions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -1301,21 +1317,23 @@ export default function AdminOrders() {
                         <div className="flex items-center gap-1.5">
                           <AddressStatusBadge order={order} />
                           <div>
-                            <div className="font-medium text-[#3E2C1F]">{order.customer?.name ?? <span className="text-[#9B8B7E] italic text-xs">Pending</span>}</div>
+                            <div className="font-medium text-[#3E2C1F]">{order.customer?.name ?? <span className="text-[#9B8B7E] italic text-xs">{t('orders.pendingName')}</span>}</div>
                             {order.customer?.email && <CopyEmailButton email={order.customer.email} />}
                           </div>
                         </div>
                       </td>
 
                       <td className="px-4 py-3 text-[#6B5B4F]">
-                        {order.items.reduce((s, i) => s + i.quantity, 0)} item
-                        {order.items.reduce((s, i) => s + i.quantity, 0) !== 1 ? 's' : ''}
+                        {t('orders.itemCount', {
+                          count: order.items.reduce((s, i) => s + i.quantity, 0),
+                          plural: order.items.reduce((s, i) => s + i.quantity, 0) !== 1 ? 's' : '',
+                        })}
                       </td>
                       <td className="px-4 py-3">
                         <div className="font-semibold text-[#3E2C1F]">${order.total.toFixed(2)}</div>
                         {order.refundAmount != null && (
                           <div className="text-xs text-red-500 font-medium">
-                            −${order.refundAmount.toFixed(2)} refund
+                            {t('orders.refundLine', { amount: order.refundAmount.toFixed(2) })}
                           </div>
                         )}
                       </td>
@@ -1345,9 +1363,9 @@ export default function AdminOrders() {
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                                   </svg>
-                                  Creating…
+                                  {t('orders.creatingLabel')}
                                 </>
-                              ) : 'Create Label'}
+                              ) : t('orders.createLabel')}
                             </button>
                           )}
                           {order.status === 'shipped' && (
@@ -1358,11 +1376,11 @@ export default function AdminOrders() {
                                 rel="noopener noreferrer"
                                 className="px-3 py-1.5 bg-[#E8B55F] text-white rounded-lg text-xs font-medium hover:bg-[#D4A04D] transition-colors"
                               >
-                                Print Label
+                                {t('orders.printLabel')}
                               </a>
                             ) : (
                               <span className="px-3 py-1.5 bg-gray-100 text-gray-400 rounded-lg text-xs">
-                                Label pending
+                                {t('orders.labelPending')}
                               </span>
                             )
                           )}
@@ -1372,7 +1390,7 @@ export default function AdminOrders() {
                               disabled={deliveredLoading === order.id}
                               className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-700 transition-colors disabled:opacity-60"
                             >
-                              {deliveredLoading === order.id ? 'Updating…' : 'Mark Delivered'}
+                              {deliveredLoading === order.id ? t('orders.markingDelivered') : t('orders.markDelivered')}
                             </button>
                           )}
                           {order.stripePaymentIntentId && order.status !== 'cancelled' && !order.refundId && (
@@ -1380,7 +1398,7 @@ export default function AdminOrders() {
                               onClick={() => setRefundOrder(order)}
                               className="px-3 py-1.5 border border-red-200 text-red-600 rounded-lg text-xs font-medium hover:bg-red-50 transition-colors"
                             >
-                              Refund
+                              {t('orders.refund')}
                             </button>
                           )}
                           {order.customer?.email && (
@@ -1391,7 +1409,7 @@ export default function AdminOrders() {
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                               </svg>
-                              Send Note
+                              {t('orders.sendNote')}
                             </button>
                           )}
                         </div>
@@ -1414,13 +1432,13 @@ export default function AdminOrders() {
                             {/* Shipping address */}
                             <div>
                               <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                <h4 className="font-semibold text-[#3E2C1F]">Shipping Address</h4>
+                                <h4 className="font-semibold text-[#3E2C1F]">{t('orders.shippingAddress')}</h4>
                                 {order.addressVerified === true && editAddressId !== order.id && (
                                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                                     </svg>
-                                    USPS Verified
+                                    {t('orders.uspsVerified')}
                                   </span>
                                 )}
                                 {order.addressVerified === false && editAddressId !== order.id && (
@@ -1428,7 +1446,7 @@ export default function AdminOrders() {
                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
                                     </svg>
-                                    Unverified
+                                    {t('orders.unverified')}
                                   </span>
                                 )}
                                 {order.addressVerified === undefined && editAddressId !== order.id && (
@@ -1437,7 +1455,7 @@ export default function AdminOrders() {
                                     disabled={verifyLoading}
                                     className="text-xs text-[#E8B55F] hover:text-[#D4A04D] font-medium transition-colors disabled:opacity-60"
                                   >
-                                    Verify address
+                                    {t('orders.verifyAddress')}
                                   </button>
                                 )}
                                 {editAddressId !== order.id ? (
@@ -1448,10 +1466,10 @@ export default function AdminOrders() {
                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                     </svg>
-                                    Edit
+                                    {t('orders.editAddress')}
                                   </button>
                                 ) : (
-                                  <span className="ml-auto text-xs text-[#9B8B7E]">Editing…</span>
+                                  <span className="ml-auto text-xs text-[#9B8B7E]">{t('orders.editing')}</span>
                                 )}
                               </div>
 
@@ -1474,7 +1492,7 @@ export default function AdminOrders() {
                                         <p>{order.customer.address.country}</p>
                                       </>
                                     ) : (
-                                      <p className="italic text-[#9B8B7E]">Address not yet collected</p>
+                                      <p className="italic text-[#9B8B7E]">{t('orders.noAddress')}</p>
                                     )}
                                   </div>
                                   {order.addressIssues && order.addressIssues.length > 0 && (
@@ -1495,7 +1513,7 @@ export default function AdminOrders() {
 
                             {/* Items */}
                             <div>
-                              <h4 className="font-semibold text-[#3E2C1F] mb-2">Items</h4>
+                              <h4 className="font-semibold text-[#3E2C1F] mb-2">{t('orders.itemsSection')}</h4>
                               <ul className="text-sm text-[#6B5B4F] space-y-1">
                                 {order.items.map((item, idx) => (
                                   <li key={idx} className="flex justify-between gap-4">
@@ -1511,17 +1529,17 @@ export default function AdminOrders() {
                             {/* Tracking */}
                             {order.trackingNumber && (
                               <div className="md:col-span-2">
-                                <h4 className="font-semibold text-[#3E2C1F] mb-2">Tracking</h4>
+                                <h4 className="font-semibold text-[#3E2C1F] mb-2">{t('orders.trackingSection')}</h4>
                                 <div className="text-sm text-[#6B5B4F]">
                                   <p>
-                                    Carrier: {order.trackingCarrier ?? '—'} &nbsp;|&nbsp; Tracking:{' '}
+                                    {t('orders.carrierLabel')} {order.trackingCarrier ?? '—'} &nbsp;|&nbsp; {t('orders.trackingPrefix')}{' '}
                                     {order.trackingUrl ? (
                                       <a href={order.trackingUrl} target="_blank" rel="noopener noreferrer" className="text-[#E8B55F] underline">
                                         {order.trackingNumber}
                                       </a>
                                     ) : order.trackingNumber}
                                   </p>
-                                  {order.shippedAt && <p>Shipped: {formatDate(order.shippedAt)}</p>}
+                                  {order.shippedAt && <p>{t('orders.shippedLabel')} {formatDate(order.shippedAt)}</p>}
                                 </div>
                               </div>
                             )}
@@ -1539,7 +1557,11 @@ export default function AdminOrders() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-white">
               <p className="text-xs text-[#9B8B7E]">
-                {((safePage - 1) * PAGE_SIZE) + 1}–{Math.min(safePage * PAGE_SIZE, filteredOrders.length)} of {filteredOrders.length} orders
+                {t('orders.paginationInfo', {
+                  from: ((safePage - 1) * PAGE_SIZE) + 1,
+                  to: Math.min(safePage * PAGE_SIZE, filteredOrders.length),
+                  total: filteredOrders.length,
+                })}
               </p>
               <div className="flex items-center gap-1">
                 <button
@@ -1547,7 +1569,7 @@ export default function AdminOrders() {
                   disabled={safePage === 1}
                   className="px-2.5 py-1 rounded text-xs text-[#6B5B4F] border border-gray-200 hover:border-[#E8B55F] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
-                  ← Prev
+                  {t('orders.prevPage')}
                 </button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1)
                   .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
@@ -1578,7 +1600,7 @@ export default function AdminOrders() {
                   disabled={safePage === totalPages}
                   className="px-2.5 py-1 rounded text-xs text-[#6B5B4F] border border-gray-200 hover:border-[#E8B55F] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
-                  Next →
+                  {t('orders.nextPage')}
                 </button>
               </div>
             </div>

@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import type { Product, ProductImage } from '@/data/products'
 import { uploadProductImage } from '@/lib/productService'
 import { categories } from '@/data/products'
+import { useLang } from '@/context/LangContext'
 
 export interface ProductFormData {
   name: string
@@ -120,6 +121,7 @@ function NumericField({ label, value, onChange, placeholder, unit }: {
 }
 
 export default function ProductForm({ initial, onSubmit, submitLabel }: ProductFormProps) {
+  const { t } = useLang()
   const [form, setForm] = useState<ProductFormData>(toFormData(initial))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -153,7 +155,7 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
       const url = await uploadProductImage(file)
       updateImage(i, { url })
     } catch {
-      setError('Image upload failed. Check Firebase Storage rules.')
+      setError(t('form.errUpload'))
     } finally {
       setUploadingIdx(null)
     }
@@ -182,7 +184,7 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
           images: f.images.map((img, ii) => ii === idx ? { ...img, url } : img),
         }))
       } catch {
-        setError('One or more image uploads failed.')
+        setError(t('form.errSomeUploads'))
       }
     }
     setUploadingIdx(null)
@@ -194,15 +196,15 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
     e.preventDefault()
     const validImages = form.images.filter((img) => img.url.trim())
     if (validImages.length === 0) {
-      setError('At least one product image is required.')
+      setError(t('form.errNoImages'))
       return
     }
     if (!form.name || !form.price || !form.description) {
-      setError('Name, price, and description are required.')
+      setError(t('form.errRequiredFields'))
       return
     }
     if (!form.lengthIn || !form.widthIn || !form.heightIn || !form.weightLb) {
-      setError('Length, width, height, and weight are all required.')
+      setError(t('form.errDimensions'))
       return
     }
     setSaving(true)
@@ -227,7 +229,7 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
 
       {/* Name */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('form.productName')}</label>
         <input
           value={form.name} onChange={(e) => set('name', e.target.value)} required
           className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E8B55F] text-gray-800"
@@ -237,7 +239,7 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
       {/* Category + In Stock + Stock Qty */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('form.category')}</label>
           <select
             value={form.category} onChange={(e) => set('category', e.target.value)}
             className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E8B55F] text-gray-800"
@@ -248,7 +250,7 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
         <div className="flex items-end pb-1">
           <label className="flex items-center gap-3 cursor-pointer">
             <input type="checkbox" checked={form.inStock} onChange={(e) => set('inStock', e.target.checked)} className="w-5 h-5 accent-[#E8B55F]" />
-            <span className="text-sm font-medium text-gray-700">In Stock</span>
+            <span className="text-sm font-medium text-gray-700">{t('form.inStock')}</span>
           </label>
         </div>
       </div>
@@ -256,8 +258,8 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
       {/* Stock Quantity */}
       <div className="w-48">
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Stock Quantity
-          <span className="ml-2 text-xs text-gray-400 font-normal">optional — leave blank to disable tracking</span>
+          {t('form.stockQty')}
+          <span className="ml-2 text-xs text-gray-400 font-normal">{t('form.stockQtyHint')}</span>
         </label>
         <input
           type="number" min="0" step="1" value={form.stockQty}
@@ -273,7 +275,7 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
 
       {/* Price */}
       <div className="w-48">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Price ($) *</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('form.price')}</label>
         <input
           type="number" min="0" step="0.01" value={form.price}
           onChange={(e) => set('price', e.target.value)} required placeholder="24.99"
@@ -283,7 +285,7 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('form.description')}</label>
         <textarea
           value={form.description} onChange={(e) => set('description', e.target.value)}
           required rows={4}
@@ -295,8 +297,8 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
       <div>
         <div className="flex items-center justify-between mb-2">
           <label className="block text-sm font-medium text-gray-700">
-            Product Images *
-            <span className="ml-2 text-xs text-gray-400 font-normal">First image is the primary thumbnail</span>
+            {t('form.images')}
+            <span className="ml-2 text-xs text-gray-400 font-normal">{t('form.imagesHint')}</span>
           </label>
           <div className="flex items-center gap-2">
             <input
@@ -309,7 +311,7 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
               className="cursor-pointer px-3 py-1.5 bg-[#E8B55F] hover:bg-[#D4A04D] text-white rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-              Upload images
+              {t('form.uploadImages')}
             </label>
           </div>
         </div>
@@ -335,9 +337,9 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
                 <div className="flex-1 space-y-2 min-w-0">
                   <div className="flex items-center gap-2">
                     {i === 0 && (
-                      <span className="text-xs font-semibold text-[#E8B55F] uppercase tracking-wide">Primary</span>
+                      <span className="text-xs font-semibold text-[#E8B55F] uppercase tracking-wide">{t('form.primary')}</span>
                     )}
-                    {i > 0 && <span className="text-xs text-gray-400">Image {i + 1}</span>}
+                    {i > 0 && <span className="text-xs text-gray-400">{t('form.imageN', { n: i + 1 })}</span>}
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -346,12 +348,12 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
                       disabled={uploadingIdx === i}
                       className="px-3 py-1.5 bg-white border border-gray-200 hover:bg-gray-100 text-gray-700 rounded-lg text-xs font-medium transition-colors disabled:opacity-60 whitespace-nowrap"
                     >
-                      {uploadingIdx === i ? 'Uploading…' : 'Upload'}
+                      {uploadingIdx === i ? t('form.uploading') : t('form.upload')}
                     </button>
                     <input
                       value={img.url}
                       onChange={(e) => updateImage(i, { url: e.target.value })}
-                      placeholder="or paste image URL"
+                      placeholder={t('form.pasteUrl')}
                       className="flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#E8B55F] text-gray-800 min-w-0"
                     />
                     <input
@@ -363,7 +365,7 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
                   <input
                     value={img.alt}
                     onChange={(e) => updateImage(i, { alt: e.target.value })}
-                    placeholder="Alt text for SEO (e.g. Handmade beeswax bread bag in natural cotton)"
+                    placeholder={t('form.altText')}
                     className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#E8B55F] text-gray-800"
                   />
                 </div>
@@ -389,15 +391,15 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
 
         <button type="button" onClick={addImageSlot} className="mt-3 text-sm text-[#E8B55F] hover:text-[#D4A04D] font-medium flex items-center gap-1">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-          Add another image
+          {t('form.addImage')}
         </button>
       </div>
 
       {/* Video */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Product Video
-          <span className="ml-2 text-xs text-gray-400 font-normal">optional — YouTube URL or direct .mp4/.webm</span>
+          {t('form.video')}
+          <span className="ml-2 text-xs text-gray-400 font-normal">{t('form.videoHint')}</span>
         </label>
         <input
           type="url"
@@ -425,25 +427,25 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
       {/* Dimensions & Weight */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">
-          Dimensions &amp; Weight *
-          <span className="ml-2 text-xs text-gray-400 font-normal">Used to calculate shipping rates</span>
+          {t('form.dimensions')}
+          <span className="ml-2 text-xs text-gray-400 font-normal">{t('form.dimensionsHint')}</span>
         </label>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <NumericField label="Length" value={form.lengthIn} onChange={(v) => set('lengthIn', v)} placeholder="14" unit="in" />
-          <NumericField label="Width" value={form.widthIn} onChange={(v) => set('widthIn', v)} placeholder="10" unit="in" />
-          <NumericField label="Height" value={form.heightIn} onChange={(v) => set('heightIn', v)} placeholder="4" unit="in" />
-          <NumericField label="Weight" value={form.weightLb} onChange={(v) => set('weightLb', v)} placeholder="0.5" unit="lb" />
+          <NumericField label={t('form.length')} value={form.lengthIn} onChange={(v) => set('lengthIn', v)} placeholder="14" unit="in" />
+          <NumericField label={t('form.width')} value={form.widthIn} onChange={(v) => set('widthIn', v)} placeholder="10" unit="in" />
+          <NumericField label={t('form.height')} value={form.heightIn} onChange={(v) => set('heightIn', v)} placeholder="4" unit="in" />
+          <NumericField label={t('form.weight')} value={form.weightLb} onChange={(v) => set('weightLb', v)} placeholder="0.5" unit="lb" />
         </div>
       </div>
 
-      <ArrayField label="Features *" values={form.features} onChange={(v) => set('features', v)} placeholder="e.g. 100% plastic-free and biodegradable" />
-      <ArrayField label="Materials *" values={form.materials} onChange={(v) => set('materials', v)} placeholder="e.g. Organic cotton" />
-      <ArrayField label="Care Instructions *" values={form.careInstructions} onChange={(v) => set('careInstructions', v)} placeholder="e.g. Hand wash in cool water with mild soap" />
+      <ArrayField label={t('form.features')} values={form.features} onChange={(v) => set('features', v)} placeholder="e.g. 100% plastic-free and biodegradable" />
+      <ArrayField label={t('form.materials')} values={form.materials} onChange={(v) => set('materials', v)} placeholder="e.g. Organic cotton" />
+      <ArrayField label={t('form.careInstructions')} values={form.careInstructions} onChange={(v) => set('careInstructions', v)} placeholder="e.g. Hand wash in cool water with mild soap" />
 
       {/* Etsy URL */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Etsy Listing URL <span className="text-gray-400 font-normal">(optional — shows &quot;Buy on Etsy&quot; button)</span>
+          {t('form.etsyUrl')} <span className="text-gray-400 font-normal">({t('form.etsyUrlHint')})</span>
         </label>
         <input
           type="url" value={form.etsyUrl} onChange={(e) => set('etsyUrl', e.target.value)}
