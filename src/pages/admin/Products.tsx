@@ -132,7 +132,15 @@ export default function AdminProducts() {
                           <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
                         )}
                       </div>
-                      <span className="font-medium text-gray-800 line-clamp-2">{product.name}</span>
+                      <div>
+                        <span className="font-medium text-gray-800 line-clamp-2">{product.name}</span>
+                        {product.bundledItems && product.bundledItems.length > 0 && (
+                          <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                            Bundle · {product.bundledItems.length} items
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </td>
                   <td className="px-4 py-4 text-gray-500 hidden md:table-cell">

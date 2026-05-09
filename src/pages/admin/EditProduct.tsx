@@ -46,6 +46,7 @@ export default function EditProduct() {
       image: validImages[0]?.url ?? '',
       images: validImages,
       videoUrl: data.videoUrl || undefined,
+      bundledItems: data.bundledItems.length > 0 ? data.bundledItems.filter(b => b.name.trim()) : undefined,
     })
     navigate('/admin/products')
   }

@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import type { Product, ProductImage } from '@/data/products'
+import type { Product, ProductImage, BundleItem } from '@/data/products'
 import { uploadProductImage } from '@/lib/productService'
 import { categories } from '@/data/products'
 import { useLang } from '@/context/LangContext'
@@ -21,6 +21,7 @@ export interface ProductFormData {
   etsyUrl: string
   images: ProductImage[]
   videoUrl: string
+  bundledItems: BundleItem[]  // empty array = not a bundle
 }
 
 interface ProductFormProps {
@@ -62,6 +63,7 @@ function toFormData(p?: Product): ProductFormData {
     etsyUrl: p?.etsyUrl ?? '',
     images,
     videoUrl: p?.videoUrl ?? '',
+    bundledItems: p?.bundledItems ?? [],
   }
 }
 
@@ -441,6 +443,68 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
       <ArrayField label={t('form.features')} values={form.features} onChange={(v) => set('features', v)} placeholder="e.g. 100% plastic-free and biodegradable" />
       <ArrayField label={t('form.materials')} values={form.materials} onChange={(v) => set('materials', v)} placeholder="e.g. Organic cotton" />
       <ArrayField label={t('form.careInstructions')} values={form.careInstructions} onChange={(v) => set('careInstructions', v)} placeholder="e.g. Hand wash in cool water with mild soap" />
+
+      {/* Bundle / Combo contents */}
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <label className="block text-sm font-medium text-gray-700">
+            Bundle Contents
+            <span className="ml-2 text-xs text-gray-400 font-normal">optional — list what's included in this combo listing</span>
+          </label>
+          {form.bundledItems.length === 0 && (
+            <button
+              type="button"
+              onClick={() => set('bundledItems', [{ name: '', qty: 1 }])}
+              className="text-xs text-[#E8B55F] hover:text-[#D4A04D] font-medium"
+            >
+              + Make this a bundle
+            </button>
+          )}
+        </div>
+        {form.bundledItems.length > 0 && (
+          <div className="space-y-2 mt-2">
+            {form.bundledItems.map((item, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input
+                  type="number" min="1" step="1"
+                  value={item.qty}
+                  onChange={(e) => {
+                    const updated = [...form.bundledItems]
+                    updated[i] = { ...updated[i], qty: Math.max(1, parseInt(e.target.value) || 1) }
+                    set('bundledItems', updated)
+                  }}
+                  className="w-16 px-2 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E8B55F] text-gray-800 text-center"
+                  title="Quantity"
+                />
+                <span className="text-gray-400 text-sm">×</span>
+                <input
+                  value={item.name}
+                  onChange={(e) => {
+                    const updated = [...form.bundledItems]
+                    updated[i] = { ...updated[i], name: e.target.value }
+                    set('bundledItems', updated)
+                  }}
+                  placeholder="e.g. Large Beeswax Bread Bag"
+                  className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E8B55F] text-gray-800"
+                />
+                <button
+                  type="button"
+                  onClick={() => set('bundledItems', form.bundledItems.filter((_, idx) => idx !== i))}
+                  className="text-red-400 hover:text-red-600 px-1 text-lg leading-none"
+                  title="Remove"
+                >×</button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => set('bundledItems', [...form.bundledItems, { name: '', qty: 1 }])}
+              className="mt-1 text-sm text-[#E8B55F] hover:text-[#D4A04D] font-medium"
+            >
+              + Add item
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Etsy URL */}
       <div>

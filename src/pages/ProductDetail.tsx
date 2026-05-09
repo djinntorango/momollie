@@ -216,6 +216,26 @@ export default function ProductDetail() {
 
             <p className="text-gray-700 leading-relaxed">{product.description}</p>
 
+            {/* Bundle contents */}
+            {product.bundledItems && product.bundledItems.length > 0 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <h2 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                  What's included
+                </h2>
+                <ul className="space-y-1">
+                  {product.bundledItems.map((item, i) => (
+                    <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
+                      <span className="w-6 h-6 flex items-center justify-center rounded-full bg-amber-600 text-white text-xs font-bold shrink-0">
+                        {item.qty}
+                      </span>
+                      <span>{item.name}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {/* Features */}
             {product.features.length > 0 && (
               <div>

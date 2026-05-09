@@ -3,6 +3,11 @@ export interface ProductImage {
   alt: string;
 }
 
+export interface BundleItem {
+  name: string;  // e.g. "Large Beeswax Bread Bag"
+  qty: number;   // e.g. 2
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -11,6 +16,7 @@ export interface Product {
   salePercent?: number;
   description: string;
   features: string[];
+  bundledItems?: BundleItem[];  // set = this listing is a bundle/combo
   image: string;           // primary image URL — kept for cart/backward compat
   images?: ProductImage[]; // full gallery with alt text
   videoUrl?: string;       // optional YouTube or direct video URL
