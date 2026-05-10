@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getProducts, applyProductSale, removeProductSale } from '@/lib/productService'
 import type { Product } from '@/data/products'
 import { useLang } from '@/context/LangContext'
+import SaleCountdown from '@/components/SaleCountdown'
 
 export default function Sales() {
   const { t } = useLang()
@@ -9,6 +10,7 @@ export default function Sales() {
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [percent, setPercent] = useState<string>('10')
+  const [endsAt, setEndsAt] = useState<string>('') // datetime-local string
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -39,11 +41,15 @@ export default function Sales() {
     const pct = parseFloat(percent)
     if (!pct || pct <= 0 || pct >= 100) return alert(t('sales.errPercent'))
     if (selected.size === 0) return alert(t('sales.errSelect'))
+    const endDate = endsAt ? new Date(endsAt) : undefined
+    if (endDate && endDate <= new Date()) return alert('Sale end time must be in the future.')
     setSaving(true)
     try {
-      await applyProductSale([...selected], pct)
+      await applyProductSale([...selected], pct, endDate)
       setProducts((prev) =>
-        prev.map((p) => (selected.has(p.id) ? { ...p, salePercent: pct } : p))
+        prev.map((p) =>
+          selected.has(p.id) ? { ...p, salePercent: pct, saleEndsAt: endDate } : p
+        )
       )
     } finally {
       setSaving(false)
@@ -56,12 +62,17 @@ export default function Sales() {
     try {
       await removeProductSale([...selected])
       setProducts((prev) =>
-        prev.map((p) => (selected.has(p.id) ? { ...p, salePercent: undefined } : p))
+        prev.map((p) =>
+          selected.has(p.id) ? { ...p, salePercent: undefined, saleEndsAt: undefined } : p
+        )
       )
     } finally {
       setSaving(false)
     }
   }
+
+  // Minimum datetime for the picker — now
+  const minDatetime = new Date(Date.now() + 60_000).toISOString().slice(0, 16)
 
   return (
     <div className="p-8">
@@ -92,6 +103,7 @@ export default function Sales() {
                   <th className="px-4 py-3 text-left text-gray-500 font-medium">{t('sales.colPrice')}</th>
                   <th className="px-4 py-3 text-left text-gray-500 font-medium">{t('sales.colCurrentSale')}</th>
                   <th className="px-4 py-3 text-left text-gray-500 font-medium">{t('sales.colSalePrice')}</th>
+                  <th className="px-4 py-3 text-left text-gray-500 font-medium">Time Left</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -99,6 +111,10 @@ export default function Sales() {
                   const salePrice = product.salePercent
                     ? (product.price * (1 - product.salePercent / 100)).toFixed(2)
                     : null
+                  const hasActiveTimer =
+                    product.salePercent &&
+                    product.saleEndsAt &&
+                    product.saleEndsAt > new Date()
                   return (
                     <tr
                       key={product.id}
@@ -137,6 +153,16 @@ export default function Sales() {
                       <td className="px-4 py-4 font-medium text-green-600">
                         {salePrice ? `$${salePrice}` : '—'}
                       </td>
+                      <td className="px-4 py-4">
+                        {hasActiveTimer ? (
+                          <SaleCountdown
+                            endsAt={product.saleEndsAt!}
+                            className="text-xs font-medium text-amber-600"
+                          />
+                        ) : (
+                          <span className="text-gray-400 text-xs">—</span>
+                        )}
+                      </td>
                     </tr>
                   )
                 })}
@@ -145,20 +171,39 @@ export default function Sales() {
           </div>
 
           {/* Action bar */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-wrap items-center gap-4">
-            <span className="text-sm text-gray-500">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-wrap items-end gap-4">
+            <span className="text-sm text-gray-500 self-center">
               {t('sales.selectedCount', { count: selected.size, plural: selected.size !== 1 ? 's' : '' })}
             </span>
-            <div className="flex items-center gap-2 ml-auto">
-              <input
-                type="number"
-                min="1"
-                max="99"
-                value={percent}
-                onChange={(e) => setPercent(e.target.value)}
-                className="w-20 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E8B55F] text-gray-800"
-              />
-              <span className="text-sm text-gray-500">{t('sales.pctOff')}</span>
+            <div className="flex flex-wrap items-end gap-3 ml-auto">
+              {/* Percent */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Discount</label>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    min="1"
+                    max="99"
+                    value={percent}
+                    onChange={(e) => setPercent(e.target.value)}
+                    className="w-20 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E8B55F] text-gray-800"
+                  />
+                  <span className="text-sm text-gray-500">{t('sales.pctOff')}</span>
+                </div>
+              </div>
+
+              {/* End time */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Sale ends <span className="text-gray-400">(optional)</span></label>
+                <input
+                  type="datetime-local"
+                  value={endsAt}
+                  min={minDatetime}
+                  onChange={(e) => setEndsAt(e.target.value)}
+                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E8B55F] text-gray-800"
+                />
+              </div>
+
               <button
                 onClick={handleApply}
                 disabled={saving || selected.size === 0}

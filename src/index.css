@@ -52,6 +52,34 @@ body {
 a { text-decoration: none; }
 button, a { transition: all 0.2s ease-in-out; }
 
+/* Cursor rules */
+button:not(:disabled),
+a,
+select:not(:disabled),
+input[type="checkbox"]:not(:disabled),
+input[type="radio"]:not(:disabled),
+input[type="file"]:not(:disabled),
+label[for],
+[role="button"] {
+  cursor: pointer;
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled,
+[disabled],
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+/* Hover border on form inputs */
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not(:disabled):hover,
+textarea:not(:disabled):hover,
+select:not(:disabled):hover {
+  border-color: var(--honey-dark) !important;
+}
+
 ::-webkit-scrollbar { width: 10px; }
 ::-webkit-scrollbar-track { background: var(--warm-cream); }
 ::-webkit-scrollbar-thumb { background: var(--honey); border-radius: 5px; }

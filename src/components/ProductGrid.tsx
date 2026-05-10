@@ -2,8 +2,126 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { Product } from '@/data/products';
 import { useCart } from '@/context/CartContext'
+import SaleCountdown from '@/components/SaleCountdown'
 
 type SortOrder = 'default' | 'low-to-high' | 'high-to-low';
+
+function ProductGridCard({ product }: { product: Product }) {
+  const { addItem, openCart } = useCart()
+  const [saleExpired, setSaleExpired] = useState(false)
+
+  const salePrice = product.salePercent && !saleExpired
+    ? (product.price * (1 - product.salePercent / 100)).toFixed(2)
+    : null
+
+  const handleAdd = () => {
+    const sp = salePrice ? parseFloat(salePrice) : null
+    addItem({
+      cartItemId: product.id,
+      productId: product.id,
+      name: product.name,
+      image: product.image,
+      price: product.price,
+      salePrice: sp,
+    })
+    openCart()
+  }
+
+  return (
+    <div className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1">
+      <Link to={`/products/${product.id}`} className="block relative h-64">
+        <img
+          src={product.images?.[0]?.url ?? product.image}
+          alt={product.images?.[0]?.alt ?? product.name}
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        {!product.inStock && (
+          <div className="absolute top-3 left-3 bg-[#C87855] text-white px-3 py-1 rounded-full text-sm font-medium shadow-md">
+            Out of Stock
+          </div>
+        )}
+        {product.salePercent && !saleExpired && (
+          <div className="absolute top-3 right-3 bg-[#A8B89F] text-white px-3 py-1 rounded-full text-sm font-medium shadow-md">
+            {product.salePercent}% Off
+          </div>
+        )}
+      </Link>
+      <div className="p-6">
+        <div className="flex items-center gap-2 mb-2">
+          {product.materials.includes('Organic cotton') && (
+            <span className="text-xs bg-[#C9D4C0] text-[#3E2C1F] px-2 py-1 rounded-full font-medium">
+              Organic
+            </span>
+          )}
+        </div>
+        <h3 className="text-xl font-semibold mt-2 mb-2 text-[#3E2C1F] hover:text-[#E8B55F] transition-colors">
+          <Link to={`/products/${product.id}`}>{product.name}</Link>
+        </h3>
+        <p className="text-[#6B5B4F] mb-4 text-sm line-clamp-2">
+          {product.description}
+        </p>
+        <div className="flex items-center gap-2 mb-1">
+          {salePrice && (
+            <span className="text-lg text-[#9B8B7E] line-through">
+              ${product.price.toFixed(2)}
+            </span>
+          )}
+          <span className="text-2xl font-bold text-[#E8B55F]">
+            ${salePrice ?? product.price.toFixed(2)}
+          </span>
+        </div>
+        {salePrice && product.saleEndsAt && product.saleEndsAt > new Date() && (
+          <div className="mb-3">
+            <SaleCountdown
+              endsAt={product.saleEndsAt}
+              onExpire={() => setSaleExpired(true)}
+              className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full"
+            />
+          </div>
+        )}
+
+        {/* Features Preview */}
+        <div className="mb-4">
+          <ul className="text-sm text-[#6B5B4F]">
+            {product.features.slice(0, 2).map((feature, index) => (
+              <li key={index} className="flex items-center gap-1">
+                <span className="text-[#A8B89F]">✓</span>
+                {feature}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="flex gap-2">
+          {product.listingType === 'bundle' ? (
+            <Link
+              to={`/products/${product.id}`}
+              className={`flex-1 block text-center py-2 rounded-full transition-all font-medium ${
+                product.inStock
+                  ? 'bg-[#E8B55F] text-white hover:bg-[#D4A04D] shadow-md hover:shadow-lg'
+                  : 'bg-[#F5E6D3] text-[#9B8B7E] pointer-events-none'
+              }`}
+            >
+              {product.inStock ? 'Customize Bundle →' : 'Out of Stock'}
+            </Link>
+          ) : (
+            <button
+              disabled={!product.inStock}
+              onClick={handleAdd}
+              className={`flex-1 py-2 rounded-full transition-all font-medium ${
+                product.inStock
+                  ? 'border border-[#E8B55F] text-[#E8B55F] hover:bg-[#E8B55F] hover:text-white'
+                  : 'border border-[#F5E6D3] text-[#9B8B7E] cursor-not-allowed'
+              }`}
+            >
+              {product.inStock ? 'Add to Cart' : 'Out of Stock'}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 interface ProductGridProps {
   products: Product[];
@@ -11,7 +129,6 @@ interface ProductGridProps {
 
 export default function ProductGrid({ products }: ProductGridProps) {
   const [sortOrder, setSortOrder] = useState<SortOrder>('default');
-  const { addItem, openCart } = useCart()
 
   // Sort products by price
   const sortedProducts = [...products].sort((a, b) => {
@@ -25,20 +142,6 @@ export default function ProductGrid({ products }: ProductGridProps) {
         return 0; // Keep original order
     }
   });
-
-  const handleAddToCart = (product: Product) => {
-    const salePrice = product.salePercent
-      ? parseFloat((product.price * (1 - product.salePercent / 100)).toFixed(2))
-      : null
-    addItem({
-      productId: product.id,
-      name: product.name,
-      image: product.image,
-      price: product.price,
-      salePrice,
-    })
-    openCart()
-  }
 
   return (
     <>
@@ -82,115 +185,14 @@ export default function ProductGrid({ products }: ProductGridProps) {
         <div className="text-center py-16">
           <h2 className="text-2xl font-bold text-[#3E2C1F] mb-4">No Products Available</h2>
           <p className="text-[#6B5B4F] mb-8">
-            Our products are being updated. Please check back soon or visit our Etsy shop directly.
+            Our products are being updated. Please check back soon.
           </p>
-          <a
-            href="https://dearmomollie.etsy.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-[#E8B55F] text-white px-8 py-3 rounded-full hover:bg-[#D4A04D] transition-all shadow-md hover:shadow-lg text-lg font-medium inline-block"
-          >
-            Visit Our Etsy Shop
-          </a>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {sortedProducts.map((product) => {
-            const salePrice = product.salePercent
-              ? (product.price * (1 - product.salePercent / 100)).toFixed(2)
-              : null
-
-            return (
-              <div
-                key={product.id}
-                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1"
-              >
-                <Link to={`/products/${product.id}`} className="block relative h-64">
-                  <img
-                    src={product.images?.[0]?.url ?? product.image}
-                    alt={product.images?.[0]?.alt ?? product.name}
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                  {!product.inStock && (
-                    <div className="absolute top-3 left-3 bg-[#C87855] text-white px-3 py-1 rounded-full text-sm font-medium shadow-md">
-                      Out of Stock
-                    </div>
-                  )}
-                  {product.salePercent && (
-                    <div className="absolute top-3 right-3 bg-[#A8B89F] text-white px-3 py-1 rounded-full text-sm font-medium shadow-md">
-                      {product.salePercent}% Off
-                    </div>
-                  )}
-                </Link>
-                <div className="p-6">
-                  <div className="flex items-center gap-2 mb-2">
-                    {product.materials.includes('Organic cotton') && (
-                      <span className="text-xs bg-[#C9D4C0] text-[#3E2C1F] px-2 py-1 rounded-full font-medium">
-                        Organic
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="text-xl font-semibold mt-2 mb-2 text-[#3E2C1F] hover:text-[#E8B55F] transition-colors">
-                    <Link to={`/products/${product.id}`}>{product.name}</Link>
-                  </h3>
-                  <p className="text-[#6B5B4F] mb-4 text-sm line-clamp-2">
-                    {product.description}
-                  </p>
-                  <div className="flex items-center gap-2 mb-4">
-                    {salePrice && (
-                      <span className="text-lg text-[#9B8B7E] line-through">
-                        ${product.price.toFixed(2)}
-                      </span>
-                    )}
-                    <span className="text-2xl font-bold text-[#E8B55F]">
-                      ${salePrice ?? product.price.toFixed(2)}
-                    </span>
-                  </div>
-
-                  {/* Features Preview */}
-                  <div className="mb-4">
-                    <ul className="text-sm text-[#6B5B4F]">
-                      {product.features.slice(0, 2).map((feature, index) => (
-                        <li key={index} className="flex items-center gap-1">
-                          <span className="text-[#A8B89F]">✓</span>
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="flex gap-2">
-                    {product.etsyUrl && (
-                      <a
-                        href={product.etsyUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`flex-1 block text-center py-2 rounded-full transition-all font-medium ${
-                          product.inStock
-                            ? 'bg-[#E8B55F] text-white hover:bg-[#D4A04D] shadow-md hover:shadow-lg'
-                            : 'bg-[#F5E6D3] text-[#9B8B7E] cursor-not-allowed'
-                        }`}
-                        onClick={(e) => !product.inStock && e.preventDefault()}
-                      >
-                        {product.inStock ? 'Buy on Etsy' : 'Out of Stock'}
-                      </a>
-                    )}
-                    <button
-                      disabled={!product.inStock}
-                      onClick={() => handleAddToCart(product)}
-                      className={`py-2 rounded-full transition-all font-medium ${
-                        product.inStock
-                          ? 'border border-[#E8B55F] text-[#E8B55F] hover:bg-[#E8B55F] hover:text-white'
-                          : 'border border-[#F5E6D3] text-[#9B8B7E] cursor-not-allowed'
-                      } ${product.etsyUrl ? 'px-4' : 'flex-1'}`}
-                    >
-                      {product.inStock ? 'Add to Cart' : 'Out of Stock'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
+          {sortedProducts.map((product) => (
+            <ProductGridCard key={product.id} product={product} />
+          ))}
         </div>
       )}
     </>

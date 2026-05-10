@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getProduct } from '@/lib/productService'
+import { getProduct, getProducts } from '@/lib/productService'
 import type { Product } from '@/data/products'
 import { useCart } from '@/context/CartContext'
+import type { CartItemSelection } from '@/context/CartContext'
+import SaleCountdown from '@/components/SaleCountdown'
 
 function getYouTubeId(url: string): string | null {
   const watchMatch = url.match(/[?&]v=([^&]+)/)
@@ -31,7 +33,7 @@ function JsonLd({ product }: { product: Product }) {
     },
     offers: {
       '@type': 'Offer',
-      url: product.etsyUrl ?? `https://momollie.me/products/${product.id}`,
+      url: product.etsyUrl ?? `https://dearmomollie.com/products/${product.id}`,
       priceCurrency: 'USD',
       price: product.salePercent
         ? (product.price * (1 - product.salePercent / 100)).toFixed(2)
@@ -57,12 +59,28 @@ export default function ProductDetail() {
   const [fetching, setFetching] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [selectedIdx, setSelectedIdx] = useState(0)
+  const [saleExpired, setSaleExpired] = useState(false)
+  // Bundle slot selections: slotIndex → chosen product
+  const [slotSelections, setSlotSelections] = useState<Record<number, Product>>({})
+  // Flat products available for bundle slot choices
+  const [slotProducts, setSlotProducts] = useState<Record<string, Product>>({})
   const { addItem, openCart } = useCart()
 
   useEffect(() => {
     if (id) {
       getProduct(id)
-        .then((p) => { if (!p) setNotFound(true); else setProduct(p) })
+        .then(async (p) => {
+          if (!p) { setNotFound(true); return }
+          setProduct(p)
+          // If bundle, pre-fetch all referenced slot products
+          if (p.listingType === 'bundle' && p.slots?.length) {
+            const allIds = [...new Set(p.slots.flatMap((s) => s.productIds))]
+            const all = await getProducts()
+            const map: Record<string, Product> = {}
+            all.forEach((prod) => { if (allIds.includes(prod.id)) map[prod.id] = prod })
+            setSlotProducts(map)
+          }
+        })
         .finally(() => setFetching(false))
     }
   }, [id])
@@ -97,20 +115,37 @@ export default function ProductDetail() {
     ? product.images
     : [{ url: product.image, alt: product.name }]
 
-  const salePrice = product.salePercent
+  const salePrice = product.salePercent && !saleExpired
     ? parseFloat((product.price * (1 - product.salePercent / 100)).toFixed(2))
     : null
 
   const youtubeId = product.videoUrl ? getYouTubeId(product.videoUrl) : null
   const isDirectVideo = product.videoUrl && !youtubeId
 
+  const isBundle = product.listingType === 'bundle'
+  const slots = product.slots ?? []
+  const allSlotsFilled = !isBundle || slots.every((_, i) => slotSelections[i] !== undefined)
+
   const handleAddToCart = () => {
+    let selections: CartItemSelection[] | undefined
+    let cartItemId = product.id
+    if (isBundle && slots.length > 0) {
+      selections = slots.map((slot, i) => ({
+        slotLabel: slot.label,
+        productId: slotSelections[i]?.id ?? '',
+        productName: slotSelections[i]?.name ?? '',
+      }))
+      // Unique key per combination so different selections = separate cart line
+      cartItemId = product.id + '::' + selections.map((s) => s.productId).join(':')
+    }
     addItem({
+      cartItemId,
       productId: product.id,
       name: product.name,
       image: product.image,
       price: product.price,
       salePrice,
+      selections,
     })
     openCart()
   }
@@ -193,19 +228,30 @@ export default function ProductDetail() {
               </p>
               <h1 className="text-3xl font-bold text-gray-900 mb-3">{product.name}</h1>
 
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center gap-3 mb-2">
                 {salePrice ? (
                   <>
                     <span className="text-3xl font-bold text-amber-600">${salePrice.toFixed(2)}</span>
                     <span className="text-xl text-gray-400 line-through">${product.price.toFixed(2)}</span>
+                    {!saleExpired && (
                     <span className="bg-green-100 text-green-700 text-sm font-semibold px-2 py-0.5 rounded">
                       {product.salePercent}% off
                     </span>
+                  )}
                   </>
                 ) : (
                   <span className="text-3xl font-bold text-amber-600">${product.price.toFixed(2)}</span>
                 )}
               </div>
+              {salePrice && product.saleEndsAt && product.saleEndsAt > new Date() && (
+                <div className="mb-3">
+                  <SaleCountdown
+                    endsAt={product.saleEndsAt}
+                    onExpire={() => setSaleExpired(true)}
+                    className="text-sm font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full"
+                  />
+                </div>
+              )}
 
               {!product.inStock && (
                 <span className="inline-block bg-red-100 text-red-600 text-sm font-semibold px-3 py-1 rounded-full mb-4">
@@ -216,26 +262,6 @@ export default function ProductDetail() {
 
             <p className="text-gray-700 leading-relaxed">{product.description}</p>
 
-            {/* Bundle contents */}
-            {product.bundledItems && product.bundledItems.length > 0 && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                <h2 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-                  What's included
-                </h2>
-                <ul className="space-y-1">
-                  {product.bundledItems.map((item, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
-                      <span className="w-6 h-6 flex items-center justify-center rounded-full bg-amber-600 text-white text-xs font-bold shrink-0">
-                        {item.qty}
-                      </span>
-                      <span>{item.name}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
             {/* Features */}
             {product.features.length > 0 && (
               <div>
@@ -243,7 +269,7 @@ export default function ProductDetail() {
                 <ul className="space-y-1.5">
                   {product.features.map((f, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                      <span className="text-green-500 mt-0.5 text-xs shrink-0">✓</span>
+                      <span className="text-green-500 mt-0.5 text-xs shrink-0">❤️</span>
                       <span>{f}</span>
                     </li>
                   ))}
@@ -251,32 +277,48 @@ export default function ProductDetail() {
               </div>
             )}
 
+            {/* Bundle slot selectors */}
+            {isBundle && slots.length > 0 && (
+              <div className="space-y-3">
+                <h2 className="font-semibold text-gray-900">Customize Your Bundle</h2>
+                {slots.map((slot, i) => {
+                  const eligibleProducts = slot.productIds
+                    .map((pid) => slotProducts[pid])
+                    .filter(Boolean) as Product[]
+                  return (
+                    <div key={i}>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{slot.label}</label>
+                      <select
+                        value={slotSelections[i]?.id ?? ''}
+                        onChange={(e) => {
+                          const chosen = eligibleProducts.find((p) => p.id === e.target.value)
+                          setSlotSelections((prev) => ({ ...prev, [i]: chosen! }))
+                        }}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 text-gray-800"
+                      >
+                        <option value="">— Choose {slot.label} —</option>
+                        {eligibleProducts.map((p) => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
             {/* CTA buttons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              {product.etsyUrl && (
-                <a
-                  href={product.etsyUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`flex-1 text-center py-3 rounded-xl font-semibold transition-colors ${
-                    product.inStock
-                      ? 'bg-amber-600 text-white hover:bg-amber-700'
-                      : 'bg-gray-200 text-gray-400 cursor-not-allowed pointer-events-none'
-                  }`}
-                >
-                  {product.inStock ? 'Buy on Etsy' : 'Out of Stock'}
-                </a>
-              )}
               <button
-                disabled={!product.inStock}
+                disabled={!product.inStock || !allSlotsFilled}
                 onClick={handleAddToCart}
-                className={`flex-1 py-3 rounded-xl font-semibold transition-colors border-2 ${
-                  product.inStock
-                    ? 'border-amber-600 text-amber-600 hover:bg-amber-50'
-                    : 'border-gray-300 text-gray-400 cursor-not-allowed'
+                className={`flex-1 py-3 rounded-xl font-semibold transition-colors ${
+                  product.inStock && allSlotsFilled
+                    ? 'bg-amber-600 text-white hover:bg-amber-700'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 }`}
               >
-                {product.inStock ? 'Add to Cart' : 'Out of Stock'}
+                {!product.inStock ? 'Out of Stock' : !allSlotsFilled ? 'Select All Options' : 'Add to Cart'}
               </button>
             </div>
 
@@ -295,7 +337,7 @@ export default function ProductDetail() {
             )}
 
             {/* Dimensions & Weight */}
-            {(product.dimensions || product.weightLb) && (
+            {(product.dimensions || (!isBundle && product.weightLb)) && (
               <div className="pt-4 border-t border-gray-100">
                 <h2 className="font-semibold text-gray-900 mb-2">Details</h2>
                 <dl className="text-sm text-gray-700 space-y-1">
@@ -305,7 +347,7 @@ export default function ProductDetail() {
                       <dd>{product.dimensions}</dd>
                     </div>
                   )}
-                  {product.weightLb && (
+                  {!isBundle && product.weightLb && (
                     <div className="flex gap-2">
                       <dt className="font-medium text-gray-500 w-24 shrink-0">Weight</dt>
                       <dd>{product.weightLb} lb</dd>

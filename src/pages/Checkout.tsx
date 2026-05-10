@@ -101,7 +101,7 @@ function StepIndicator({ step }: { step: 1 | 2 | 3 }) {
 interface CheckoutFormProps {
   paymentIntentId: string
   subtotalCents: number
-  cartItems: Array<{ productId: string; quantity: number }>
+  cartItems: Array<{ productId: string; quantity: number; selections?: { productId: string }[] }>
 }
 
 function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFormProps) {
@@ -133,6 +133,7 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
   const [taxError, setTaxError] = useState<string | null>(null)
 
   // Step 3
+  const [tosAccepted, setTosAccepted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [paymentError, setPaymentError] = useState<string | null>(null)
 
@@ -148,7 +149,7 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
         setEstimateLoading(true)
         try {
           const fn = httpsCallable<
-            { destinationZip: string; items: Array<{ productId: string; quantity: number }> },
+            { destinationZip: string; items: Array<{ productId: string; quantity: number; selections?: { productId: string }[] }> },
             ShippingEstimate
           >(functions(), 'getShippingEstimate')
           const result = await fn({ destinationZip: zip, items: cartItems })
@@ -505,10 +506,30 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
           </p>
         )}
 
+        <label className="flex items-start gap-3 mt-5 cursor-pointer group">
+          <input
+            type="checkbox"
+            checked={tosAccepted}
+            onChange={(e) => setTosAccepted(e.target.checked)}
+            className="mt-0.5 w-4 h-4 accent-[#E8B55F] flex-shrink-0"
+          />
+          <span className="text-xs text-[#9B8B7E] group-hover:text-[#6B5B4F] transition-colors leading-relaxed">
+            I agree to the{' '}
+            <Link to="/terms" target="_blank" className="text-[#E8B55F] hover:text-[#D4A04D] underline">
+              Terms of Service
+            </Link>{' '}
+            and{' '}
+            <Link to="/privacy" target="_blank" className="text-[#E8B55F] hover:text-[#D4A04D] underline">
+              Privacy Policy
+            </Link>
+            .
+          </span>
+        </label>
+
         <button
           type="submit"
-          disabled={!stripe || !elements || submitting || !finalizedTotalCents}
-          className="mt-5 w-full py-4 bg-[#3E2C1F] text-white rounded-full font-semibold text-base hover:bg-[#2D1F15] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          disabled={!stripe || !elements || submitting || !finalizedTotalCents || !tosAccepted}
+          className="mt-4 w-full py-4 bg-[#3E2C1F] text-white rounded-full font-semibold text-base hover:bg-[#2D1F15] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {submitting ? (
             <>
@@ -548,11 +569,17 @@ export default function Checkout() {
     }
 
     const createPI = httpsCallable<
-      { items: Array<{ productId: string; quantity: number }> },
+      { items: Array<{ productId: string; quantity: number; selections?: { productId: string }[] }> },
       { clientSecret: string; paymentIntentId: string; subtotalCents: number }
     >(functions(), 'createPaymentIntent')
 
-    createPI({ items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })) })
+    createPI({
+      items: items.map((i) => ({
+        productId: i.productId,
+        quantity: i.quantity,
+        ...(i.selections ? { selections: i.selections.map((s) => ({ productId: s.productId })) } : {}),
+      })),
+    })
       .then((result) => {
         setClientSecret(result.data.clientSecret)
         setPaymentIntentId(result.data.paymentIntentId)
@@ -667,7 +694,11 @@ export default function Checkout() {
                   <CheckoutForm
                     paymentIntentId={paymentIntentId}
                     subtotalCents={Math.round(subtotal * 100)}
-                    cartItems={items.map((i) => ({ productId: i.productId, quantity: i.quantity }))}
+                    cartItems={items.map((i) => ({
+                      productId: i.productId,
+                      quantity: i.quantity,
+                      ...(i.selections ? { selections: i.selections.map((s) => ({ productId: s.productId })) } : {}),
+                    }))}
                   />
                 </Elements>
               )}

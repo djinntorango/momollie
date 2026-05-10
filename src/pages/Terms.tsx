@@ -1,5 +1,5 @@
 export default function Terms() {
-  const updated = 'May 9, 2025'
+  const updated = 'May 9, 2026'
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-16">
@@ -30,7 +30,7 @@ export default function Terms() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#3E2C1F] mb-2">3. Pricing & Payment</h2>
+          <h2 className="text-lg font-semibold text-[#3E2C1F] mb-2">3. Pricing &amp; Payment</h2>
           <p>
             All prices are in US dollars. We reserve the right to change prices at any time;
             changes will not affect orders already placed. Payment is processed securely through
@@ -48,23 +48,34 @@ export default function Terms() {
           <p className="mt-2">
             Risk of loss passes to you upon delivery to the carrier. If your order is lost or
             significantly delayed, please contact us at{' '}
-            <a href="mailto:hello@momollie.me" className="text-[#E8B55F] hover:text-[#D4A04D]">
-              hello@momollie.me
-            </a>{' '}
-            and we will work with you to resolve the issue.
+            <a href="mailto:hello@dearmomollie.com" className="text-[#E8B55F] hover:text-[#D4A04D]">
+              hello@dearmomollie.com
+            </a>
+            {' '}and we will work with you to resolve the issue.
           </p>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#3E2C1F] mb-2">5. Returns & Refunds</h2>
+          <h2 className="text-lg font-semibold text-[#3E2C1F] mb-2">5. Returns &amp; Refunds</h2>
           <p>
-            Because our products are handmade and food-adjacent, we accept returns only for items
-            that arrive damaged or defective. Please contact us within <strong>7 days</strong> of
-            delivery with a photo of the issue and your order number.
+            As our products are handmade and food-adjacent, we currently offer returns or refunds
+            only for items that arrive damaged or have clear defects.
           </p>
           <p className="mt-2">
-            Approved refunds will be issued to your original payment method within 5–10 business
-            days. We do not accept returns for change-of-mind purchases.
+            If you experience any issues, please contact us within <strong>7 days</strong> of
+            delivery and include your order number along with a photo of the item. We'll take a
+            close look and work with you to make things right.
+          </p>
+          <p className="mt-2">
+            For hygiene and food safety reasons, items that have been used are not eligible for
+            return.
+          </p>
+          <p className="mt-2">
+            Once a refund is approved, it will be issued to your original payment method within
+            5–10 business days.
+          </p>
+          <p className="mt-2">
+            We're unable to accept returns for change-of-mind purchases.
           </p>
         </section>
 
@@ -81,36 +92,8 @@ export default function Terms() {
           <h2 className="text-lg font-semibold text-[#3E2C1F] mb-2">7. Limitation of Liability</h2>
           <p>
             To the fullest extent permitted by law, Dear Momollie shall not be liable for any
-            indirect, incidental, special, or consequential damages arising from your use of our
-            products or website. Our total liability shall not exceed the amount you paid for the
-            order in question.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-lg font-semibold text-[#3E2C1F] mb-2">8. Governing Law</h2>
-          <p>
-            These terms are governed by the laws of the State of Texas, United States, without
-            regard to conflict-of-law principles. Any disputes shall be resolved in the courts of
-            that state.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-lg font-semibold text-[#3E2C1F] mb-2">9. Changes to These Terms</h2>
-          <p>
-            We may update these Terms at any time. Continued use of the site after changes are
-            posted constitutes acceptance of the revised Terms.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-lg font-semibold text-[#3E2C1F] mb-2">10. Contact</h2>
-          <p>
-            Questions about these Terms?{' '}
-            <a href="mailto:hello@momollie.me" className="text-[#E8B55F] hover:text-[#D4A04D]">
-              hello@momollie.me
-            </a>
+            indirect, incidental, special, or consequential damages arising from the use of our
+            products or website.
           </p>
         </section>
 

@@ -6,12 +6,12 @@ export default function AboutPage() {
       {/* Hero Section */}
       <section className="mb-16">
         <div className="relative h-96 w-full mb-8 rounded-2xl overflow-hidden">
-          <img src="/hero.png" alt="DearMomollie handcrafted products" className="absolute inset-0 w-full h-full object-cover" />
+          <img src="/hero.png" alt="Dear Momollie handcrafted beeswax bread bags made in Denton, Texas" className="absolute inset-0 w-full h-full object-cover" />
         </div>
-        <h1 className="text-5xl font-bold text-center mb-6 text-[#3E2C1F]">About DearMomollie</h1>
+        <h1 className="text-5xl font-bold text-center mb-6 text-[#3E2C1F]">About Dear Momollie</h1>
         <p className="text-xl text-[#6B5B4F] text-center max-w-3xl mx-auto leading-relaxed">
-          We're passionate about creating handcrafted, sustainable solutions for home bakers
-          who want to keep their bread fresh naturally—without plastic.
+          Handcrafted beeswax bread bags made with love in Denton, Texas — where my passion for
+          sewing, baking, and sustainable living all came together in one little bag.
         </p>
       </section>
 
@@ -21,22 +21,29 @@ export default function AboutPage() {
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div>
             <p className="text-[#6B5B4F] mb-6 text-lg leading-relaxed">
-              DearMomollie was created from a love of homemade bread and a desire to make sustainable
-              living accessible to everyone. We believe that the simple act of baking bread at home
-              shouldn't come with a side of plastic waste.
+              Dear Momollie is my story. I grew up learning to sew and bake on my grandmother's
+              farm — two skills passed down through her hands that I never imagined would one day
+              come together in a business.
             </p>
             <p className="text-[#6B5B4F] mb-6 text-lg leading-relaxed">
-              Every product we make is handcrafted with care, using natural beeswax and quality materials.
-              We're passionate about helping home bakers preserve their creations while reducing their
-              environmental footprint.
+              About five years ago I discovered beeswax as a natural way to keep homemade bread
+              fresher longer. I started hand-sewing my own bread bags with beeswax linings —
+              combining my grandmother's craft traditions with a practical solution for a
+              plastic-free kitchen.
+            </p>
+            <p className="text-[#6B5B4F] mb-6 text-lg leading-relaxed">
+              Whenever friends came to visit, they'd leave with a loaf of freshly baked sourdough
+              tucked inside one of my bags. It wasn't long before they started asking for bags of
+              their own. Word spread the way good bread does — naturally, and with a lot of warmth.
             </p>
             <p className="text-[#6B5B4F] text-lg leading-relaxed">
-              From our hands to your kitchen, each piece is made with attention to detail and a commitment
-              to making our customers happy.
+              What started as a gift became a calling. Based out of Denton, Texas, Dear Momollie
+              is my way of sharing that passion with home bakers everywhere — one beeswax bread
+              bag at a time.
             </p>
           </div>
           <div className="relative h-96 rounded-2xl overflow-hidden shadow-xl">
-            <img src="/bag.png" alt="Handcrafted beeswax bread bag" className="absolute inset-0 w-full h-full object-cover" />
+            <img src="/bag.png" alt="Handcrafted beeswax bread bag made in Denton Texas" className="absolute inset-0 w-full h-full object-cover" />
           </div>
         </div>
       </section>
@@ -51,8 +58,8 @@ export default function AboutPage() {
             </div>
             <h3 className="text-2xl font-bold mb-4 text-center text-[#3E2C1F]">Handcrafted Quality</h3>
             <p className="text-[#6B5B4F] text-center leading-relaxed">
-              Every product is handmade by us with careful attention to detail. We take pride in
-              creating accessories that are built to last and made with natural materials.
+              Every bag is cut and sewn by hand, the same way my grandmother taught me.
+              No shortcuts, no mass production — just careful, intentional making.
             </p>
           </div>
           <div className="bg-gradient-to-br from-[#FFF8E7] to-[#F5E6D3] p-8 rounded-2xl shadow-lg">
@@ -61,39 +68,41 @@ export default function AboutPage() {
             </div>
             <h3 className="text-2xl font-bold mb-4 text-center text-[#3E2C1F]">Natural Ingredients</h3>
             <p className="text-[#6B5B4F] text-center leading-relaxed">
-              We use pure beeswax in our products because it's natural, sustainable, and
-              perfect for preserving bread. No synthetic chemicals or plastics—just nature's best.
+              We use pure beeswax because it works — naturally antimicrobial, breathable, and
+              proven across generations to keep bread fresh without plastic or synthetic chemicals.
             </p>
           </div>
           <div className="bg-gradient-to-br from-[#FFF8E7] to-[#F5E6D3] p-8 rounded-2xl shadow-lg">
             <div className="w-16 h-16 bg-[#A8B89F] rounded-full flex items-center justify-center mx-auto mb-6 shadow-md">
-              <span className="text-white text-3xl">💚</span>
+              <span className="text-white text-3xl">🌾</span>
             </div>
-            <h3 className="text-2xl font-bold mb-4 text-center text-[#3E2C1F]">Customer Happiness</h3>
+            <h3 className="text-2xl font-bold mb-4 text-center text-[#3E2C1F]">Rooted in Tradition</h3>
             <p className="text-[#6B5B4F] text-center leading-relaxed">
-              Your satisfaction matters to us. We're committed to creating products that make
-              your life easier and supporting you with care every step of the way.
+              The skills behind every Dear Momollie bag were passed down on a family farm. We
+              believe the best things — bread, craft, community — are worth doing the old-fashioned way.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Our Craft */}
+      {/* The Craft */}
       <section className="mb-16 bg-gradient-to-br from-[#C9D4C0] to-[#A8B89F] rounded-2xl p-12 text-white">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="relative h-96 rounded-2xl overflow-hidden shadow-xl order-2 md:order-1">
-            <img src="/cover.png" alt="Artisan craftsmanship" className="absolute inset-0 w-full h-full object-cover" />
+            <img src="/cover.png" alt="Sansui's handcrafted beeswax bread bags" className="absolute inset-0 w-full h-full object-cover" />
           </div>
           <div className="order-1 md:order-2">
-            <h2 className="text-4xl font-bold mb-6">The Art of Handmaking</h2>
+            <h2 className="text-4xl font-bold mb-6">Made in Denton, With Love</h2>
             <p className="text-lg mb-6 leading-relaxed">
-              We're passionate about the craft of making things by hand. Each beeswax bread bag
-              and kitchen accessory we create is made with traditional techniques and modern
-              sustainability in mind.
+              Every Dear Momollie bag starts at my sewing machine in Denton, Texas. I select
+              quality organic cotton fabrics, cut each piece by hand, and apply a pure beeswax
+              lining designed to protect your bread the natural way.
             </p>
             <p className="text-lg leading-relaxed">
-              When you choose DearMomollie, you're choosing products made with intention, care,
-              and a deep respect for both the environment and the art of home baking.
+              When you order from Dear Momollie, you're not getting something off a shelf. You're
+              getting something made by hand, by someone who genuinely loves both baking and the
+              craft of making — and who wants your bread to taste just as good on day four as it
+              did fresh from the oven.
             </p>
           </div>
         </div>
@@ -101,10 +110,11 @@ export default function AboutPage() {
 
       {/* Call to Action */}
       <section className="text-center bg-gradient-to-br from-[#FFF8E7] to-[#F5E6D3] rounded-2xl p-12 shadow-lg">
-        <h2 className="text-4xl font-bold mb-6 text-[#3E2C1F]">Join Our Community</h2>
+        <h2 className="text-4xl font-bold mb-6 text-[#3E2C1F]">Bake More. Waste Less.</h2>
         <p className="text-xl text-[#6B5B4F] mb-8 max-w-2xl mx-auto leading-relaxed">
-          Discover our handcrafted collection and experience the difference that natural,
-          sustainable products can make in your kitchen.
+          Whether you're a seasoned sourdough baker or just getting started, Dear Momollie's
+          handcrafted beeswax bread bags are the sustainable storage solution your kitchen has
+          been missing.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
@@ -113,14 +123,6 @@ export default function AboutPage() {
           >
             Shop Our Products
           </Link>
-          <a
-            href="https://dearmomollie.etsy.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-[#C87855] text-white px-8 py-4 rounded-full hover:bg-[#B86845] transition-all shadow-md hover:shadow-lg text-lg font-medium"
-          >
-            Visit Our Etsy Shop
-          </a>
         </div>
       </section>
     </div>

@@ -17,7 +17,6 @@ export default function Home() {
             <p className="text-lg md:text-xl text-[#3E2C1F] mb-8 drop-shadow-md font-medium">Handcrafted accessories to keep your homemade bread fresh and your kitchen plastic-free</p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Link to="/products" className="bg-[#E8B55F] text-white px-6 py-3 rounded-full hover:bg-[#D4A04D] transition-all shadow-md hover:shadow-lg text-center font-medium whitespace-nowrap">Shop Our Collection</Link>
-              <a href="https://dearmomollie.etsy.com" target="_blank" rel="noopener noreferrer" className="bg-[#C87855] text-white px-6 py-3 rounded-full hover:bg-[#B86845] transition-all shadow-md hover:shadow-lg text-center font-medium whitespace-nowrap">Visit Our Etsy Shop</a>
             </div>
           </div>
         </div>

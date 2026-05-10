@@ -9,6 +9,7 @@ import {
   query,
   orderBy,
   serverTimestamp,
+  Timestamp,
 } from 'firebase/firestore';
 import {
   ref,
@@ -27,16 +28,29 @@ function stripUndefined<T extends object>(obj: T): Partial<T> {
   ) as Partial<T>;
 }
 
+function fromDoc(id: string, data: Record<string, unknown>): Product {
+  const p = { id, ...data } as Product & { saleEndsAt?: Timestamp | Date }
+  if (p.saleEndsAt instanceof Timestamp) {
+    p.saleEndsAt = p.saleEndsAt.toDate()
+  }
+  // Strip expired sale data so stale Firestore docs don't show discounts
+  if (p.saleEndsAt instanceof Date && p.saleEndsAt <= new Date()) {
+    p.salePercent = undefined
+    p.saleEndsAt = undefined
+  }
+  return p as Product
+}
+
 export async function getProducts(): Promise<Product[]> {
   const q = query(collection(db(), COLLECTION), orderBy('createdAt', 'desc'));
   const snapshot = await getDocs(q);
-  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Product));
+  return snapshot.docs.map((d) => fromDoc(d.id, d.data() as Record<string, unknown>));
 }
 
 export async function getProduct(id: string): Promise<Product | null> {
   const snap = await getDoc(doc(db(), COLLECTION, id));
   if (!snap.exists()) return null;
-  return { id: snap.id, ...snap.data() } as Product;
+  return fromDoc(snap.id, snap.data() as Record<string, unknown>);
 }
 
 export async function createProduct(
@@ -64,10 +78,18 @@ export async function deleteProduct(id: string): Promise<void> {
   await deleteDoc(doc(db(), COLLECTION, id));
 }
 
-export async function applyProductSale(productIds: string[], percent: number): Promise<void> {
+export async function applyProductSale(
+  productIds: string[],
+  percent: number,
+  endsAt?: Date
+): Promise<void> {
   await Promise.all(
     productIds.map((id) =>
-      updateDoc(doc(db(), COLLECTION, id), { salePercent: percent, updatedAt: serverTimestamp() })
+      updateDoc(doc(db(), COLLECTION, id), {
+        salePercent: percent,
+        saleEndsAt: endsAt ? Timestamp.fromDate(endsAt) : null,
+        updatedAt: serverTimestamp(),
+      })
     )
   );
 }
@@ -75,7 +97,11 @@ export async function applyProductSale(productIds: string[], percent: number): P
 export async function removeProductSale(productIds: string[]): Promise<void> {
   await Promise.all(
     productIds.map((id) =>
-      updateDoc(doc(db(), COLLECTION, id), { salePercent: null, updatedAt: serverTimestamp() })
+      updateDoc(doc(db(), COLLECTION, id), {
+        salePercent: null,
+        saleEndsAt: null,
+        updatedAt: serverTimestamp(),
+      })
     )
   );
 }

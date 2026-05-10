@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { Product } from '@/data/products'
 import { useCart } from '@/context/CartContext'
+import SaleCountdown from '@/components/SaleCountdown'
 
 interface ProductCardProps {
   product: Product
@@ -10,8 +12,9 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, categoryName, variant = 'default' }: ProductCardProps) {
   const { addItem, openCart } = useCart()
+  const [saleExpired, setSaleExpired] = useState(false)
 
-  const salePrice = product.salePercent
+  const salePrice = product.salePercent && !saleExpired
     ? parseFloat((product.price * (1 - product.salePercent / 100)).toFixed(2))
     : null
   const cardClass = variant === 'featured'
@@ -24,6 +27,7 @@ export default function ProductCard({ product, categoryName, variant = 'default'
 
   const handleAddToCart = () => {
     addItem({
+      cartItemId: product.id,
       productId: product.id,
       name: product.name,
       image: product.image,
@@ -61,12 +65,21 @@ export default function ProductCard({ product, categoryName, variant = 'default'
           <Link to={`/products/${product.id}`}>{product.name}</Link>
         </h3>
         <p className="text-gray-600 mb-4 text-sm line-clamp-2">{product.description}</p>
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-1">
           {salePrice && <span className="text-lg text-gray-400 line-through">${product.price.toFixed(2)}</span>}
           <span className={`font-bold text-amber-600 ${variant === 'featured' ? 'text-3xl' : 'text-2xl'}`}>
             ${salePrice ? salePrice.toFixed(2) : product.price.toFixed(2)}
           </span>
         </div>
+        {salePrice && product.saleEndsAt && product.saleEndsAt > new Date() && (
+          <div className="mb-3">
+            <SaleCountdown
+              endsAt={product.saleEndsAt}
+              onExpire={() => setSaleExpired(true)}
+              className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full"
+            />
+          </div>
+        )}
 
         {variant !== 'compact' && (
           <div className="mb-4">
@@ -86,31 +99,33 @@ export default function ProductCard({ product, categoryName, variant = 'default'
         )}
 
         <div className="flex gap-2">
-          {product.etsyUrl && (
-            <a
-              href={product.etsyUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`flex-1 text-center py-2 rounded-lg transition-colors ${
-                product.inStock ? 'bg-amber-600 text-white hover:bg-amber-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-              onClick={(e) => !product.inStock && e.preventDefault()}
-            >
-              {product.inStock ? 'Buy on Etsy' : 'Out of Stock'}
-            </a>
-          )}
-          {variant !== 'compact' && (
-            <button
-              disabled={!product.inStock}
-              onClick={handleAddToCart}
-              className={`px-4 py-2 rounded-lg transition-colors font-medium ${
+          {product.listingType === 'bundle' ? (
+            <Link
+              to={`/products/${product.id}`}
+              className={`flex-1 text-center py-2 rounded-lg transition-colors font-medium ${
                 product.inStock
-                  ? 'border border-amber-600 text-amber-600 hover:bg-amber-50'
-                  : 'border border-gray-300 text-gray-400 cursor-not-allowed'
-              } ${!product.etsyUrl ? 'flex-1' : ''}`}
+                  ? 'bg-amber-600 text-white hover:bg-amber-700'
+                  : 'bg-gray-200 text-gray-400 pointer-events-none'
+              }`}
             >
-              {product.inStock ? 'Add to Cart' : 'Out of Stock'}
-            </button>
+              {product.inStock ? 'Customize Bundle →' : 'Out of Stock'}
+            </Link>
+          ) : (
+            <>
+              {variant !== 'compact' && (
+                <button
+                  disabled={!product.inStock}
+                  onClick={handleAddToCart}
+                  className={`flex-1 px-4 py-2 rounded-lg transition-colors font-medium ${
+                    product.inStock
+                      ? 'border border-amber-600 text-amber-600 hover:bg-amber-50'
+                      : 'border border-gray-300 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  {product.inStock ? 'Add to Cart' : 'Out of Stock'}
+                </button>
+              )}
+            </>
           )}
         </div>
 

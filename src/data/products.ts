@@ -3,9 +3,9 @@ export interface ProductImage {
   alt: string;
 }
 
-export interface BundleItem {
-  name: string;  // e.g. "Large Beeswax Bread Bag"
-  qty: number;   // e.g. 2
+export interface BundleSlot {
+  label: string;       // e.g. "Bag 1", "Bowl Cover"
+  productIds: string[]; // flat product IDs the customer can pick from for this slot
 }
 
 export interface Product {
@@ -14,9 +14,11 @@ export interface Product {
   category: string;
   price: number;
   salePercent?: number;
+  saleEndsAt?: Date;
   description: string;
   features: string[];
-  bundledItems?: BundleItem[];  // set = this listing is a bundle/combo
+  listingType?: 'bundle'; // absent or undefined = flat listing
+  slots?: BundleSlot[];   // only for bundle listings
   image: string;           // primary image URL — kept for cart/backward compat
   images?: ProductImage[]; // full gallery with alt text
   videoUrl?: string;       // optional YouTube or direct video URL
