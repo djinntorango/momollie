@@ -13,11 +13,14 @@ import Contact from './pages/Contact'
 import ProductDetail from './pages/ProductDetail'
 import Terms from './pages/Terms'
 import Privacy from './pages/Privacy'
+import NotFound from './pages/NotFound'
 import AdminLogin from './pages/admin/Login'
 import AdminShell from './pages/admin/AdminShell'
 import AdminProducts from './pages/admin/Products'
 import AdminNewProduct from './pages/admin/NewProduct'
 import AdminEditProduct from './pages/admin/EditProduct'
+import AdminNewBundle from './pages/admin/NewBundle'
+import AdminEditBundle from './pages/admin/EditBundle'
 import AdminSales from './pages/admin/Sales'
 import AdminPromotions from './pages/admin/Promotions'
 import AdminOrders from './pages/admin/Orders'
@@ -59,6 +62,7 @@ export default function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
+            <Route path="*" element={<NotFound />} />
           </Route>
 
           {/* Admin portal */}
@@ -67,6 +71,12 @@ export default function App() {
             <Route element={<AdminShell />}>
               <Route index element={<Navigate to="/admin/orders" replace />} />
               <Route path="orders" element={<AdminOrders />} />
+              <Route path="listings" element={<AdminProducts />} />
+              <Route path="listings/new" element={<AdminNewProduct />} />
+              <Route path="listings/:id/edit" element={<AdminEditProduct />} />
+              <Route path="listings/new-bundle" element={<AdminNewBundle />} />
+              <Route path="listings/:id/edit-bundle" element={<AdminEditBundle />} />
+              {/* Legacy redirects */}
               <Route path="products" element={<AdminProducts />} />
               <Route path="products/new" element={<AdminNewProduct />} />
               <Route path="products/:id/edit" element={<AdminEditProduct />} />

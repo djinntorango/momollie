@@ -39,7 +39,7 @@ interface FirestoreSettings {
   country?: string;
 }
 
-const ALLOWED_ORIGINS = ["https://momollie.web.app", "https://momollie.me"];
+const ALLOWED_ORIGINS = ["https://momollie.web.app", "https://dearmomollie.com"];
 
 // Packaging dimensions (own packaging) — 12"×9"×6" box, 0.5 lb tare
 const PACKAGING = {length: "12", width: "9", height: "6", distance_unit: "in", mass_unit: "lb"};

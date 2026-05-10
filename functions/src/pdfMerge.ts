@@ -1,7 +1,7 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {PDFDocument} from "pdf-lib";
 
-const ALLOWED_ORIGINS = ["https://momollie.web.app", "https://momollie.me"];
+const ALLOWED_ORIGINS = ["https://momollie.web.app", "https://dearmomollie.com"];
 
 export const mergeLabelsPdf = onCall(
   {cors: ALLOWED_ORIGINS},

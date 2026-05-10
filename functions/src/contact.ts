@@ -6,7 +6,7 @@ import {
   sendOrderNoteEmail,
 } from "./email.js";
 
-const ALLOWED_ORIGINS = ["https://momollie.web.app", "https://momollie.me"];
+const ALLOWED_ORIGINS = ["https://momollie.web.app", "https://dearmomollie.com"];
 
 // ---------------------------------------------------------------------------
 // sendContactEmail — public, anyone on the site can submit the contact form

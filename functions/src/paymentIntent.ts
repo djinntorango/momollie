@@ -7,13 +7,14 @@ import {getShippingRateOptions, ShippoAddress} from "./shippoClient.js";
 const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
 const shippoApiKey = defineSecret("SHIPPO_API_KEY");
 
-const ALLOWED_ORIGINS = ["https://momollie.web.app", "https://momollie.me"];
+const ALLOWED_ORIGINS = ["https://momollie.web.app", "https://dearmomollie.com"];
 const PACKAGING = {length: "12", width: "9", height: "6", distance_unit: "in", mass_unit: "lb"};
 const PACKAGING_TARE_LB = 0.5;
 
 interface CheckoutItem {
   productId: string;
   quantity: number;
+  selections?: { productId: string }[];  // bundle slot selections
 }
 
 interface FirestoreProduct {
@@ -72,16 +73,37 @@ export const createPaymentIntent = onCall(
       if (typeof product.stockQty === "number" && product.stockQty <= 0) {
         throw new HttpsError("failed-precondition", `"${product.name}" is out of stock`);
       }
-      if (!product.weightLb) {
-        throw new HttpsError(
-          "failed-precondition",
-          `"${product.name}" is missing weight data — contact the shop`
-        );
-      }
 
       const unitPrice = product.salePercent
         ? product.price * (1 - product.salePercent / 100)
         : product.price;
+
+      // For bundles with slot selections, sum the actual selected products' weights.
+      // For flat products, use the product's own weightLb.
+      let resolvedWeightLb: number;
+      if (item.selections && item.selections.length > 0) {
+        const selSnaps = await Promise.all(
+          item.selections.map((sel) => db.collection("products").doc(sel.productId).get())
+        );
+        resolvedWeightLb = selSnaps.reduce((sum, selSnap) => {
+          const selProduct = selSnap.data() as FirestoreProduct | undefined;
+          if (!selProduct?.weightLb) {
+            throw new HttpsError(
+              "failed-precondition",
+              `A selected bundle item is missing weight data — contact the shop`
+            );
+          }
+          return sum + selProduct.weightLb;
+        }, 0);
+      } else {
+        if (!product.weightLb) {
+          throw new HttpsError(
+            "failed-precondition",
+            `"${product.name}" is missing weight data — contact the shop`
+          );
+        }
+        resolvedWeightLb = product.weightLb;
+      }
 
       orderItems.push({
         productId: item.productId,
@@ -89,7 +111,7 @@ export const createPaymentIntent = onCall(
         image: product.image ?? "",
         price: unitPrice,
         quantity: item.quantity,
-        weightLb: product.weightLb,
+        weightLb: resolvedWeightLb,
       });
     }
 

@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://momollie.me/sitemap.xml
+Sitemap: https://dearmomollie.com/sitemap.xml
 
 # Block crawlers from admin and private areas
 Disallow: /admin/

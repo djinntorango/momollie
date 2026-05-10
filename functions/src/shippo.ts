@@ -47,7 +47,7 @@ interface FirestoreSettings {
   phone?: string;
 }
 
-const ALLOWED_ORIGINS = ["https://momollie.web.app", "https://momollie.me"];
+const ALLOWED_ORIGINS = ["https://momollie.web.app", "https://dearmomollie.com"];
 
 export const verifyOrderAddresses = onCall(
   {secrets: [shippoApiKey], cors: ALLOWED_ORIGINS},
@@ -150,6 +150,7 @@ const PACKAGING_TARE_LB = 0.5;
 interface EstimateItem {
   productId: string;
   quantity: number;
+  selections?: { productId: string }[];  // bundle slot selections
 }
 
 interface FirestoreProductWeight {
@@ -174,20 +175,51 @@ export const getShippingEstimate = onCall(
     const db = admin.firestore();
     const apiKey = shippoApiKey.value();
 
-    const [productSnaps, settingsSnap] = await Promise.all([
-      Promise.all(items.map((item) => db.collection("products").doc(item.productId).get())),
+    // Collect all product IDs we need to fetch: the top-level product + any selection sub-products
+    const allProductIds = new Set<string>();
+    for (const item of items) {
+      allProductIds.add(item.productId);
+      if (item.selections) {
+        for (const sel of item.selections) allProductIds.add(sel.productId);
+      }
+    }
+    const idList = Array.from(allProductIds);
+
+    const [productSnapsMap, settingsSnap] = await Promise.all([
+      Promise.all(idList.map((id) => db.collection("products").doc(id).get())).then((snaps) => {
+        const m = new Map<string, FirestoreProductWeight>();
+        snaps.forEach((snap, i) => { if (snap.exists) m.set(idList[i], snap.data() as FirestoreProductWeight); });
+        return m;
+      }),
       db.collection("settings").doc("shipping").get(),
     ]);
 
-    const itemsWeightLb = items.reduce((sum, item, i) => {
-      const product = productSnaps[i].data() as FirestoreProductWeight | undefined;
-      if (!product?.weightLb) {
-        throw new HttpsError(
-          "failed-precondition",
-          `Product ${item.productId} is missing weight data — update the product before estimating shipping`
-        );
+    const itemsWeightLb = items.reduce((sum, item) => {
+      let itemWeight: number;
+      if (item.selections && item.selections.length > 0) {
+        // Bundle: sum the weights of the actually selected products
+        itemWeight = item.selections.reduce((s, sel) => {
+          const selProduct = productSnapsMap.get(sel.productId);
+          if (!selProduct?.weightLb) {
+            throw new HttpsError(
+              "failed-precondition",
+              `Selected product ${sel.productId} is missing weight data`
+            );
+          }
+          return s + selProduct.weightLb;
+        }, 0);
+      } else {
+        // Flat product: use the product's own weight
+        const product = productSnapsMap.get(item.productId);
+        if (!product?.weightLb) {
+          throw new HttpsError(
+            "failed-precondition",
+            `Product ${item.productId} is missing weight data — update the product before estimating shipping`
+          );
+        }
+        itemWeight = product.weightLb;
       }
-      return sum + product.weightLb * item.quantity;
+      return sum + itemWeight * item.quantity;
     }, 0);
     const totalWeightLb = Math.max(itemsWeightLb + PACKAGING_TARE_LB, 0.1);
 
