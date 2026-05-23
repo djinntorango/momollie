@@ -64,6 +64,7 @@ export default function ProductDetail() {
   const [slotSelections, setSlotSelections] = useState<Record<number, Product>>({})
   // Flat products available for bundle slot choices
   const [slotProducts, setSlotProducts] = useState<Record<string, Product>>({})
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
   const { addItem, openCart } = useCart()
 
   useEffect(() => {
@@ -72,10 +73,10 @@ export default function ProductDetail() {
         .then(async (p) => {
           if (!p) { setNotFound(true); return }
           setProduct(p)
-          // If bundle, pre-fetch all referenced slot products
+          const all = await getProducts()
+          setRelatedProducts(all.filter((prod) => prod.id !== id))
           if (p.listingType === 'bundle' && p.slots?.length) {
             const allIds = [...new Set(p.slots.flatMap((s) => s.productIds))]
-            const all = await getProducts()
             const map: Record<string, Product> = {}
             all.forEach((prod) => { if (allIds.includes(prod.id)) map[prod.id] = prod })
             setSlotProducts(map)
@@ -218,6 +219,46 @@ export default function ProductDetail() {
                 />
               </div>
             )}
+
+            {/* Customers also viewed */}
+            {relatedProducts.length > 0 && (
+              <div className="hidden lg:block border-t border-gray-200 pt-6">
+                <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Customers also viewed</h2>
+                <div className="grid grid-cols-3 gap-3">
+                  {relatedProducts.slice(0, 6).map((p) => {
+                    const relSale = p.salePercent
+                      ? parseFloat((p.price * (1 - p.salePercent / 100)).toFixed(2))
+                      : null
+                    return (
+                      <Link
+                        key={p.id}
+                        to={`/products/${p.id}`}
+                        className="group"
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                      >
+                        <div className="relative rounded-xl overflow-hidden bg-gray-100 mb-2 aspect-square">
+                          <img
+                            src={p.images?.[0]?.url ?? p.image}
+                            alt={p.images?.[0]?.alt ?? p.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                          />
+                          {p.bestSeller && (
+                            <span className="absolute top-1.5 left-1.5 bg-amber-500 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-full">
+                              Best Seller
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs font-medium text-gray-800 line-clamp-2 leading-snug">{p.name}</p>
+                        <p className="text-xs font-semibold text-amber-600 mt-0.5">
+                          ${(relSale ?? p.price).toFixed(2)}
+                          {relSale && <span className="text-gray-400 line-through ml-1 font-normal">${p.price.toFixed(2)}</span>}
+                        </p>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right: Product info */}
@@ -226,7 +267,7 @@ export default function ProductDetail() {
               <p className="text-sm text-amber-600 font-medium capitalize mb-1">
                 {product.category.replace(/-/g, ' ')}
               </p>
-              <h1 className="text-3xl font-bold text-gray-900 mb-3">{product.name}</h1>
+              <h1 className="text-3xl font-bold text-gray-900 mb-3">{product.displayTitle ?? product.name}</h1>
 
               <div className="flex items-center gap-3 mb-2">
                 {salePrice ? (
@@ -372,6 +413,7 @@ export default function ProductDetail() {
               </div>
             )}
           </div>
+
         </div>
       </div>
     </>

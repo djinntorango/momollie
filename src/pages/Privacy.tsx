@@ -11,7 +11,7 @@ export default function Privacy() {
         <section>
           <h2 className="text-lg font-semibold text-[#3E2C1F] mb-2">1. Who We Are</h2>
           <p>
-            Dear Momollie operates the website at momollie.me. This policy explains what personal
+            Dear Momollie operates the website at dearmomollie.com. This policy explains what personal
             information we collect, how we use it, and your rights.
           </p>
         </section>
@@ -72,8 +72,8 @@ export default function Privacy() {
             If you opt in at checkout, we may send occasional emails about new products, promotions,
             or restocks. Every marketing email includes an unsubscribe link. You can also opt out
             at any time by emailing{' '}
-            <a href="mailto:hello@momollie.me" className="text-[#E8B55F] hover:text-[#D4A04D]">
-              hello@momollie.me
+            <a href="mailto:hello@dearmomollie.com" className="text-[#E8B55F] hover:text-[#D4A04D]">
+              hello@dearmomollie.com
             </a>{' '}
             with "unsubscribe" in the subject line.
           </p>
@@ -94,8 +94,8 @@ export default function Privacy() {
             Depending on where you live, you may have the right to access, correct, or delete your
             personal information, or to object to certain uses. To exercise any of these rights,
             contact us at{' '}
-            <a href="mailto:hello@momollie.me" className="text-[#E8B55F] hover:text-[#D4A04D]">
-              hello@momollie.me
+            <a href="mailto:hello@dearmomollie.com" className="text-[#E8B55F] hover:text-[#D4A04D]">
+              hello@dearmomollie.com
             </a>
             . We will respond within 30 days.
           </p>
@@ -122,8 +122,8 @@ export default function Privacy() {
           <h2 className="text-lg font-semibold text-[#3E2C1F] mb-2">10. Contact</h2>
           <p>
             Privacy questions or requests:{' '}
-            <a href="mailto:hello@momollie.me" className="text-[#E8B55F] hover:text-[#D4A04D]">
-              hello@momollie.me
+            <a href="mailto:hello@dearmomollie.com" className="text-[#E8B55F] hover:text-[#D4A04D]">
+              hello@dearmomollie.com
             </a>
           </p>
         </section>

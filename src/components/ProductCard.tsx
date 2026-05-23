@@ -43,6 +43,7 @@ export default function ProductCard({ product, categoryName, variant = 'default'
         <div className={`relative ${imageHeight}`}>
           <img src={primaryImage} alt={primaryAlt} className="absolute inset-0 w-full h-full object-cover" />
           <div className="absolute top-2 left-2 flex flex-col gap-1">
+            {product.bestSeller && <span className="bg-amber-500 text-white px-2 py-1 rounded text-xs font-semibold">Best Seller</span>}
             {!product.inStock && <span className="bg-red-500 text-white px-2 py-1 rounded text-xs font-semibold">Out of Stock</span>}
             {salePrice && <span className="bg-green-500 text-white px-2 py-1 rounded text-xs font-semibold">{product.salePercent}% Off</span>}
           </div>
@@ -62,7 +63,7 @@ export default function ProductCard({ product, categoryName, variant = 'default'
           )}
         </div>
         <h3 className={`font-semibold mb-2 ${variant === 'featured' ? 'text-2xl' : 'text-xl'} hover:text-amber-600 transition-colors`}>
-          <Link to={`/products/${product.id}`}>{product.name}</Link>
+          <Link to={`/products/${product.id}`}>{product.displayTitle ?? product.name}</Link>
         </h3>
         <p className="text-gray-600 mb-4 text-sm line-clamp-2">{product.description}</p>
         <div className="flex items-center gap-2 mb-1">

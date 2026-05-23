@@ -3,7 +3,7 @@ import {defineSecret} from "firebase-functions/params";
 
 export const resendApiKey = defineSecret("RESEND_API_KEY");
 
-const FROM = "Dear Momollie <orders@momollie.me>";
+const FROM = "Dear Momollie <orders@dearmomollie.com>";
 const BRAND_BROWN = "#3E2C1F";
 const BRAND_GOLD = "#E8B55F";
 const BRAND_CREAM = "#FAF8F4";
@@ -97,8 +97,8 @@ function emailShell(title: string, body: string) {
         <!-- Footer -->
         <tr>
           <td style="background-color:${BRAND_BROWN};padding:20px 40px;text-align:center;">
-            <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.4);">© ${new Date().getFullYear()} Dear Momollie · momollie.me</p>
-            <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.3);">Questions? Reply to this email or visit momollie.me</p>
+            <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.4);">© ${new Date().getFullYear()} Dear Momollie · dearmomollie.com</p>
+            <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.3);">Questions? Reply to this email or visit dearmomollie.com</p>
           </td>
         </tr>
 
@@ -194,7 +194,7 @@ export async function sendOrderConfirmation(
 }
 
 // ---------------------------------------------------------------------------
-// Contact form notification (to hello@momollie.me, reply-to = customer)
+// Contact form notification (to hello@dearmomollie.com, reply-to = customer)
 // ---------------------------------------------------------------------------
 
 export interface ContactNotificationData {
@@ -233,8 +233,8 @@ ${data.message}
   `;
 
   await resend.emails.send({
-    from: `Momollie Contact <site@momollie.me>`,
-    to: "hello@momollie.me",
+    from: `Momollie Contact <site@dearmomollie.com>`,
+    to: "hello@dearmomollie.com",
     replyTo: `${data.customerName} <${data.customerEmail}>`,
     subject: `[Contact] ${data.subject} — ${data.customerName}`,
     html: emailShell("New contact message", body),
@@ -242,7 +242,7 @@ ${data.message}
 }
 
 // ---------------------------------------------------------------------------
-// Order note (from hello@momollie.me to customer — personal, not automated)
+// Order note (from hello@dearmomollie.com to customer — personal, not automated)
 // ---------------------------------------------------------------------------
 
 export interface OrderNoteData {
@@ -269,14 +269,14 @@ ${data.message}
 
     <p style="margin:0;font-size:13px;color:#9B8778;border-top:1px solid #EDE8E1;padding-top:16px;">
       This note is regarding your order <strong style="color:${BRAND_BROWN};">#${shortId}</strong>.
-      Reply directly to this email and it will reach us at hello@momollie.me.
+      Reply directly to this email and it will reach us at hello@dearmomollie.com.
     </p>
   `;
 
   await resend.emails.send({
-    from: `Dear Momollie <hello@momollie.me>`,
+    from: `Dear Momollie <hello@dearmomollie.com>`,
     to: data.customerEmail,
-    replyTo: "Dear Momollie <hello@momollie.me>",
+    replyTo: "Dear Momollie <hello@dearmomollie.com>",
     subject: data.subject,
     html: emailShell(data.subject, body),
   });

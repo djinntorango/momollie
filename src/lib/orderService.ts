@@ -7,7 +7,9 @@ import {
   deleteField,
   orderBy,
   query,
+  onSnapshot,
   Timestamp,
+  type Unsubscribe,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import type { Order } from '@/data/products'
@@ -63,6 +65,18 @@ export async function getOrders(): Promise<Order[]> {
   const q = query(collection(db(), 'orders'), orderBy('createdAt', 'desc'))
   const snap = await getDocs(q)
   return snap.docs.map((d) => docToOrder(d.id, d.data() as Record<string, unknown>))
+}
+
+export function subscribeOrders(
+  onChange: (orders: Order[]) => void,
+  onError?: (err: Error) => void
+): Unsubscribe {
+  const q = query(collection(db(), 'orders'), orderBy('createdAt', 'desc'))
+  return onSnapshot(
+    q,
+    (snap) => onChange(snap.docs.map((d) => docToOrder(d.id, d.data() as Record<string, unknown>))),
+    onError
+  )
 }
 
 export async function getOrder(id: string): Promise<Order | null> {

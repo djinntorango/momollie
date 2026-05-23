@@ -11,12 +11,14 @@ export interface BundleSlot {
 export interface Product {
   id: string;
   name: string;
+  displayTitle?: string;
   category: string;
   price: number;
   salePercent?: number;
   saleEndsAt?: Date;
   description: string;
   features: string[];
+  bestSeller?: boolean;
   listingType?: 'bundle'; // absent or undefined = flat listing
   slots?: BundleSlot[];   // only for bundle listings
   image: string;           // primary image URL — kept for cart/backward compat

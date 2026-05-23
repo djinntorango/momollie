@@ -144,7 +144,6 @@ export default function HandmadeKitchenAccessories() {
         <p className="text-gray-600 mb-6">Experience the difference that artisan craftsmanship makes in your daily kitchen routines.</p>
         <div className="flex gap-4">
           <Link to="/products" className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors">Browse Our Collection</Link>
-          <a href="https://dearmomollie.etsy.com" target="_blank" rel="noopener noreferrer" className="border border-purple-600 text-purple-600 px-6 py-3 rounded-lg hover:bg-purple-50 transition-colors">Visit Our Etsy Shop</a>
         </div>
       </section>
       <nav className="mt-12 pt-8 border-t">

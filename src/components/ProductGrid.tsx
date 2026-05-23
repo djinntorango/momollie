@@ -35,11 +35,18 @@ function ProductGridCard({ product }: { product: Product }) {
           alt={product.images?.[0]?.alt ?? product.name}
           className="absolute inset-0 w-full h-full object-cover"
         />
-        {!product.inStock && (
-          <div className="absolute top-3 left-3 bg-[#C87855] text-white px-3 py-1 rounded-full text-sm font-medium shadow-md">
-            Out of Stock
-          </div>
-        )}
+        <div className="absolute top-3 left-3 flex flex-col gap-1">
+          {product.bestSeller && (
+            <div className="bg-amber-500 text-white px-3 py-1 rounded-full text-sm font-medium shadow-md">
+              Best Seller
+            </div>
+          )}
+          {!product.inStock && (
+            <div className="bg-[#C87855] text-white px-3 py-1 rounded-full text-sm font-medium shadow-md">
+              Out of Stock
+            </div>
+          )}
+        </div>
         {product.salePercent && !saleExpired && (
           <div className="absolute top-3 right-3 bg-[#A8B89F] text-white px-3 py-1 rounded-full text-sm font-medium shadow-md">
             {product.salePercent}% Off
@@ -55,7 +62,7 @@ function ProductGridCard({ product }: { product: Product }) {
           )}
         </div>
         <h3 className="text-xl font-semibold mt-2 mb-2 text-[#3E2C1F] hover:text-[#E8B55F] transition-colors">
-          <Link to={`/products/${product.id}`}>{product.name}</Link>
+          <Link to={`/products/${product.id}`}>{product.displayTitle ?? product.name}</Link>
         </h3>
         <p className="text-[#6B5B4F] mb-4 text-sm line-clamp-2">
           {product.description}

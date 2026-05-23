@@ -18,7 +18,7 @@ export default function Sidebar() {
       ),
     },
     {
-      to: '/admin/products',
+      to: '/admin/listings',
       label: t('sidebar.products'),
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

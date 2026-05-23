@@ -1,12 +1,20 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 
-interface CartItem {
+export interface CartItemSelection {
+  slotLabel: string
+  productId: string
+  productName: string
+}
+
+export interface CartItem {
+  cartItemId: string   // flat items: productId; bundles: productId + slot hash
   productId: string
   name: string
   image: string
   price: number
   salePrice: number | null
   quantity: number
+  selections?: CartItemSelection[]
 }
 
 interface CartContextValue {
@@ -15,8 +23,8 @@ interface CartContextValue {
   openCart: () => void
   closeCart: () => void
   addItem: (item: Omit<CartItem, 'quantity'>) => void
-  removeItem: (productId: string) => void
-  updateQuantity: (productId: string, qty: number) => void
+  removeItem: (cartItemId: string) => void
+  updateQuantity: (cartItemId: string, qty: number) => void
   clearCart: () => void
   itemCount: number
   subtotal: number
@@ -30,7 +38,12 @@ function loadFromStorage(): CartItem[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return []
-    return JSON.parse(raw) as CartItem[]
+    const parsed = JSON.parse(raw) as CartItem[]
+    // back-compat: old items may not have cartItemId
+    return parsed.map((item) => ({
+      ...item,
+      cartItemId: item.cartItemId ?? item.productId,
+    }))
   } catch {
     return []
   }
@@ -53,26 +66,26 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addItem = useCallback((incoming: Omit<CartItem, 'quantity'>) => {
     setItems((prev) => {
-      const existing = prev.find((i) => i.productId === incoming.productId)
+      const existing = prev.find((i) => i.cartItemId === incoming.cartItemId)
       if (existing) {
         return prev.map((i) =>
-          i.productId === incoming.productId ? { ...i, quantity: i.quantity + 1 } : i
+          i.cartItemId === incoming.cartItemId ? { ...i, quantity: i.quantity + 1 } : i
         )
       }
       return [...prev, { ...incoming, quantity: 1 }]
     })
   }, [])
 
-  const removeItem = useCallback((productId: string) => {
-    setItems((prev) => prev.filter((i) => i.productId !== productId))
+  const removeItem = useCallback((cartItemId: string) => {
+    setItems((prev) => prev.filter((i) => i.cartItemId !== cartItemId))
   }, [])
 
-  const updateQuantity = useCallback((productId: string, qty: number) => {
+  const updateQuantity = useCallback((cartItemId: string, qty: number) => {
     if (qty <= 0) {
-      setItems((prev) => prev.filter((i) => i.productId !== productId))
+      setItems((prev) => prev.filter((i) => i.cartItemId !== cartItemId))
     } else {
       setItems((prev) =>
-        prev.map((i) => (i.productId === productId ? { ...i, quantity: qty } : i))
+        prev.map((i) => (i.cartItemId === cartItemId ? { ...i, quantity: qty } : i))
       )
     }
   }, [])

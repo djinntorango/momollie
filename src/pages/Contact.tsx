@@ -167,8 +167,8 @@ export default function Contact() {
 
       <p className="text-center text-xs text-[#9B8B7E] mt-6">
         You can also email us directly at{' '}
-        <a href="mailto:hello@momollie.me" className="text-[#E8B55F] hover:underline">
-          hello@momollie.me
+        <a href="mailto:hello@dearmomollie.com" className="text-[#E8B55F] hover:underline">
+          hello@dearmomollie.com
         </a>
       </p>
     </div>

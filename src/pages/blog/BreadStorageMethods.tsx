@@ -224,7 +224,6 @@ export default function BreadStorageMethods() {
         <p className="text-gray-600 mb-6">Experience the difference a beeswax bread bag makes. Your homemade bread deserves the best storage.</p>
         <div className="flex gap-4">
           <Link to="/products" className="bg-amber-600 text-white px-6 py-3 rounded-lg hover:bg-amber-700 transition-colors">Shop Bread Bags</Link>
-          <a href="https://dearmomollie.etsy.com" target="_blank" rel="noopener noreferrer" className="border border-amber-600 text-amber-600 px-6 py-3 rounded-lg hover:bg-amber-50 transition-colors">Visit Etsy Shop</a>
         </div>
       </section>
       <nav className="mt-12 pt-8 border-t">

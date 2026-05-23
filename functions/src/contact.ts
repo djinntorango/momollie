@@ -1,12 +1,13 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+import {isAdmin} from "./config.js";
 import {
   resendApiKey,
   sendContactNotification,
   sendOrderNoteEmail,
 } from "./email.js";
 
-const ALLOWED_ORIGINS = ["https://momollie.web.app", "https://dearmomollie.com"];
+const ALLOWED_ORIGINS = ["https://momollie.web.app", "https://dearmomollie.com", "https://momollie.me"];
 
 // ---------------------------------------------------------------------------
 // sendContactEmail — public, anyone on the site can submit the contact form
@@ -58,8 +59,8 @@ interface SendOrderNoteRequest {
 export const sendOrderNote = onCall(
   {secrets: [resendApiKey], cors: ALLOWED_ORIGINS},
   async (request) => {
-    if (!request.auth) {
-      throw new HttpsError("unauthenticated", "Authentication required");
+    if (!isAdmin(request.auth?.uid)) {
+      throw new HttpsError("permission-denied", "Admin access required");
     }
 
     const data = request.data as SendOrderNoteRequest;

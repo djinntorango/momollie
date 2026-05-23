@@ -5,6 +5,8 @@ import * as admin from "firebase-admin";
 import {getShippingRateOptions, ShippoAddress} from "./shippoClient.js";
 import {resendApiKey, sendOrderConfirmation} from "./email.js";
 
+import {isAdmin} from "./config.js";
+
 const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
 const stripeWebhookSecret = defineSecret("STRIPE_WEBHOOK_SECRET");
 const shippoApiKey = defineSecret("SHIPPO_API_KEY");
@@ -39,7 +41,7 @@ interface FirestoreSettings {
   country?: string;
 }
 
-const ALLOWED_ORIGINS = ["https://momollie.web.app", "https://dearmomollie.com"];
+const ALLOWED_ORIGINS = ["https://momollie.web.app", "https://dearmomollie.com", "https://momollie.me"];
 
 // Packaging dimensions (own packaging) — 12"×9"×6" box, 0.5 lb tare
 const PACKAGING = {length: "12", width: "9", height: "6", distance_unit: "in", mass_unit: "lb"};
@@ -225,8 +227,8 @@ export const createCheckoutSession = onCall(
 export const createRefund = onCall(
   {secrets: [stripeSecretKey], cors: ALLOWED_ORIGINS},
   async (request) => {
-    if (!request.auth) {
-      throw new HttpsError("unauthenticated", "Authentication required");
+    if (!isAdmin(request.auth?.uid)) {
+      throw new HttpsError("permission-denied", "Admin access required");
     }
 
     const {orderId, amountCents} = request.data as {orderId: string; amountCents?: number};
@@ -316,16 +318,25 @@ export const stripeWebhook = onRequest(
       // Only process PIs created by our createPaymentIntent function
       if (orderId) {
         const db = admin.firestore();
-        const shipping = pi.shipping;
-        const customerName = shipping?.name ?? "";
-        const customerEmail = pi.receipt_email ?? "";
-        const address = shipping?.address;
 
-        await db.collection("orders").doc(orderId).update({
+        // Build the update: always mark paid, only update customer if not already set
+        const orderSnap = await db.collection("orders").doc(orderId).get();
+        const existingCustomer = (orderSnap.data() as {customer?: {name?: string}} | undefined)?.customer;
+
+        const baseUpdate: Record<string, unknown> = {
           status: "paid",
-          customer: {
-            name: customerName,
-            email: customerEmail,
+          stripePaymentIntentId: pi.id,
+          expiresAt: admin.firestore.FieldValue.delete(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+
+        // Only copy address from pi.shipping if we don't already have one from finalizePaymentIntent
+        if (!existingCustomer?.name && pi.shipping) {
+          const shipping = pi.shipping;
+          const address = shipping.address;
+          baseUpdate.customer = {
+            name: shipping.name ?? "",
+            email: pi.receipt_email ?? "",
             address: {
               line1: address?.line1 ?? "",
               ...(address?.line2 ? {line2: address.line2} : {}),
@@ -334,10 +345,13 @@ export const stripeWebhook = onRequest(
               zip: address?.postal_code ?? "",
               country: address?.country ?? "US",
             },
-          },
-          stripePaymentIntentId: pi.id,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
+          };
+        } else if (!existingCustomer?.name && pi.receipt_email) {
+          // At least save the email if we somehow have it but no address
+          baseUpdate["customer.email"] = pi.receipt_email;
+        }
+
+        await db.collection("orders").doc(orderId).update(baseUpdate);
 
         // Atomically decrement stockQty for each purchased product
         const orderForStock = await db.collection("orders").doc(orderId).get();
@@ -359,21 +373,26 @@ export const stripeWebhook = onRequest(
           })
         );
 
-        // Fetch items for confirmation email
-        const orderSnap = await db.collection("orders").doc(orderId).get();
-        const orderData = orderSnap.data() as {
+        // Fetch fresh order data for confirmation email
+        const freshSnap = await db.collection("orders").doc(orderId).get();
+        const orderData = freshSnap.data() as {
           items?: Array<{name: string; quantity: number; price: number}>;
           subtotal?: number;
           total?: number;
           shippingTier?: "standard" | "priority";
+          customer?: {name?: string; email?: string; address?: {line1?: string; line2?: string; city?: string; state?: string; zip?: string; country?: string}};
         } | undefined;
 
-        if (customerEmail && orderData) {
+        const emailTo = orderData?.customer?.email ?? pi.receipt_email ?? "";
+        const nameFor = orderData?.customer?.name ?? "";
+        const addrFor = orderData?.customer?.address;
+
+        if (emailTo && orderData) {
           try {
             await sendOrderConfirmation(resendApiKey.value(), {
               orderId,
-              customerName,
-              customerEmail,
+              customerName: nameFor,
+              customerEmail: emailTo,
               items: (orderData.items ?? []).map((i) => ({
                 name: i.name,
                 quantity: i.quantity,
@@ -383,12 +402,12 @@ export const stripeWebhook = onRequest(
               total: orderData.total ?? pi.amount / 100,
               shippingTier: orderData.shippingTier ?? "standard",
               address: {
-                line1: address?.line1 ?? "",
-                ...(address?.line2 ? {line2: address.line2} : {}),
-                city: address?.city ?? "",
-                state: address?.state ?? "",
-                zip: address?.postal_code ?? "",
-                country: address?.country ?? "US",
+                line1: addrFor?.line1 ?? "",
+                ...(addrFor?.line2 ? {line2: addrFor.line2} : {}),
+                city: addrFor?.city ?? "",
+                state: addrFor?.state ?? "",
+                zip: addrFor?.zip ?? "",
+                country: addrFor?.country ?? "US",
               },
             });
           } catch (emailErr) {

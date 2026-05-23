@@ -63,7 +63,7 @@ export default function Cart() {
             {items.map((item) => {
               const displayPrice = item.salePrice !== null ? item.salePrice : item.price
               return (
-                <li key={item.productId} className="flex gap-4 p-5">
+                <li key={item.cartItemId} className="flex gap-4 p-5">
                   <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-[#F5E6D3]">
                     <img
                       src={item.image}
@@ -88,7 +88,7 @@ export default function Cart() {
                     <div className="flex items-center gap-3 mt-3">
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                          onClick={() => updateQuantity(item.cartItemId, item.quantity - 1)}
                           className="w-8 h-8 rounded-full border border-[#E8B55F] text-[#E8B55F] flex items-center justify-center hover:bg-[#E8B55F] hover:text-white transition-colors text-lg leading-none"
                           aria-label="Decrease quantity"
                         >
@@ -96,7 +96,7 @@ export default function Cart() {
                         </button>
                         <span className="w-6 text-center font-medium text-[#3E2C1F]">{item.quantity}</span>
                         <button
-                          onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                          onClick={() => updateQuantity(item.cartItemId, item.quantity + 1)}
                           className="w-8 h-8 rounded-full border border-[#E8B55F] text-[#E8B55F] flex items-center justify-center hover:bg-[#E8B55F] hover:text-white transition-colors text-lg leading-none"
                           aria-label="Increase quantity"
                         >
@@ -109,7 +109,7 @@ export default function Cart() {
                       </span>
 
                       <button
-                        onClick={() => removeItem(item.productId)}
+                        onClick={() => removeItem(item.cartItemId)}
                         className="ml-auto text-[#9B8B7E] hover:text-red-500 transition-colors"
                         aria-label="Remove item"
                       >

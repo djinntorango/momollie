@@ -14,6 +14,8 @@ import {
 } from "./shippoClient.js";
 import {resendApiKey, sendShippingNotification} from "./email.js";
 
+import {isAdmin} from "./config.js";
+
 const shippoApiKey = defineSecret("SHIPPO_API_KEY");
 
 interface FirestoreOrder {
@@ -47,13 +49,13 @@ interface FirestoreSettings {
   phone?: string;
 }
 
-const ALLOWED_ORIGINS = ["https://momollie.web.app", "https://dearmomollie.com"];
+const ALLOWED_ORIGINS = ["https://momollie.web.app", "https://dearmomollie.com", "https://momollie.me"];
 
 export const verifyOrderAddresses = onCall(
   {secrets: [shippoApiKey], cors: ALLOWED_ORIGINS},
   async (request) => {
-    if (!request.auth) {
-      throw new HttpsError("unauthenticated", "Authentication required");
+    if (!isAdmin(request.auth?.uid)) {
+      throw new HttpsError("permission-denied", "Admin access required");
     }
 
     const {orderIds} = request.data as {orderIds: string[]};
@@ -118,8 +120,8 @@ export const verifyOrderAddresses = onCall(
 export const validateAddress = onCall(
   {secrets: [shippoApiKey], cors: ALLOWED_ORIGINS},
   async (request): Promise<ShippoAddressValidation> => {
-    if (!request.auth) {
-      throw new HttpsError("unauthenticated", "Authentication required");
+    if (!isAdmin(request.auth?.uid)) {
+      throw new HttpsError("permission-denied", "Admin access required");
     }
 
     const {name, line1, line2, city, state, zip, country} = request.data as {
@@ -266,7 +268,7 @@ const PACKAGING = PACKAGING_DIMS;
 export const previewShippingLabel = onCall(
   {secrets: [shippoApiKey], cors: ALLOWED_ORIGINS},
   async (request) => {
-    if (!request.auth) throw new HttpsError("unauthenticated", "Authentication required");
+    if (!isAdmin(request.auth?.uid)) throw new HttpsError("permission-denied", "Admin access required");
 
     const {orderId} = request.data as {orderId: string};
     if (!orderId) throw new HttpsError("invalid-argument", "orderId is required");
@@ -344,8 +346,8 @@ export const previewShippingLabel = onCall(
 export const createShippingLabel = onCall(
   {secrets: [shippoApiKey, resendApiKey], cors: ALLOWED_ORIGINS},
   async (request) => {
-    if (!request.auth) {
-      throw new HttpsError("unauthenticated", "Authentication required");
+    if (!isAdmin(request.auth?.uid)) {
+      throw new HttpsError("permission-denied", "Admin access required");
     }
 
     const {orderId} = request.data as {orderId: string};

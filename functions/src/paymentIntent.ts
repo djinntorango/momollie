@@ -7,9 +7,10 @@ import {getShippingRateOptions, ShippoAddress} from "./shippoClient.js";
 const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
 const shippoApiKey = defineSecret("SHIPPO_API_KEY");
 
-const ALLOWED_ORIGINS = ["https://momollie.web.app", "https://dearmomollie.com"];
-const PACKAGING = {length: "12", width: "9", height: "6", distance_unit: "in", mass_unit: "lb"};
-const PACKAGING_TARE_LB = 0.5;
+const ALLOWED_ORIGINS = ["https://momollie.web.app", "https://dearmomollie.com", "https://momollie.me"];
+// Poly mailer dimensions — update height/width/length if switching to boxes
+const PACKAGING = {length: "14", width: "10", height: "2", distance_unit: "in", mass_unit: "lb"};
+const PACKAGING_TARE_LB = 0.1; // poly mailer weight
 
 interface CheckoutItem {
   productId: string;
@@ -119,6 +120,10 @@ export const createPaymentIntent = onCall(
       orderItems.reduce((s, i) => s + i.price * i.quantity, 0) * 100
     );
 
+    if (subtotalCents < 50) {
+      throw new HttpsError("invalid-argument", "Order total must be at least $0.50");
+    }
+
     // Reserve the Firestore doc ID before creating the PI so we can store it in metadata
     const orderRef = db.collection("orders").doc();
 
@@ -133,11 +138,12 @@ export const createPaymentIntent = onCall(
     });
 
     await orderRef.set({
-      status: "pending_payment",
+      status: "pending",
       stripePaymentIntentId: pi.id,
       items: orderItems,
       subtotal: subtotalCents / 100,
       total: subtotalCents / 100, // updated by finalizePaymentIntent
+      expiresAt: admin.firestore.Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000),
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
@@ -158,10 +164,20 @@ export const createPaymentIntent = onCall(
 export const finalizePaymentIntent = onCall(
   {secrets: [stripeSecretKey, shippoApiKey], cors: ALLOWED_ORIGINS},
   async (request) => {
-    const {paymentIntentId, shippingTier, destinationZip} = request.data as {
+    const {paymentIntentId, shippingTier, destinationZip, shippingAddress, email} = request.data as {
       paymentIntentId: string;
       shippingTier: "standard" | "priority";
       destinationZip: string;
+      shippingAddress?: {
+        name: string;
+        line1: string;
+        line2?: string;
+        city: string;
+        state: string;
+        zip: string;
+        country: string;
+      };
+      email?: string;
     };
 
     if (!paymentIntentId || !destinationZip || !shippingTier) {
@@ -243,12 +259,10 @@ export const finalizePaymentIntent = onCall(
             reference: "items",
             tax_code: "txcd_99999999", // general physical goods
           },
-          {
-            amount: shippingCostCents,
-            reference: "shipping",
-            tax_code: "txcd_92010001", // shipping / freight
-          },
         ],
+        shipping_cost: {
+          amount: shippingCostCents,
+        },
         customer_details: {
           address: {postal_code: destinationZip, country: "US"},
           address_source: "shipping",
@@ -277,13 +291,28 @@ export const finalizePaymentIntent = onCall(
       },
     });
 
-    // Update the pending order with confirmed shipping info
-    await db.collection("orders").doc(orderId).update({
+    // Update the pending order with confirmed shipping info and customer address
+    const orderUpdate: Record<string, unknown> = {
       shippingTier,
       total: totalCents / 100,
       taxAmount: taxCents / 100,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    };
+    if (shippingAddress) {
+      orderUpdate.customer = {
+        name: shippingAddress.name,
+        email: email ?? "",
+        address: {
+          line1: shippingAddress.line1,
+          ...(shippingAddress.line2 ? {line2: shippingAddress.line2} : {}),
+          city: shippingAddress.city,
+          state: shippingAddress.state,
+          zip: shippingAddress.zip,
+          country: shippingAddress.country,
+        },
+      };
+    }
+    await db.collection("orders").doc(orderId).update(orderUpdate);
 
     return {
       totalCents,
@@ -292,5 +321,103 @@ export const finalizePaymentIntent = onCall(
       taxCents,
       taxError,
     };
+  }
+);
+
+/**
+ * Called by the client immediately after stripe.confirmPayment() returns success.
+ * Verifies with Stripe that the PI actually succeeded, then marks the order as paid.
+ * This is the primary status update path — the webhook is a secondary fallback.
+ */
+export const completeOrder = onCall(
+  {secrets: [stripeSecretKey], cors: ALLOWED_ORIGINS},
+  async (request) => {
+    const {paymentIntentId} = request.data as {paymentIntentId: string};
+    if (!paymentIntentId) {
+      throw new HttpsError("invalid-argument", "paymentIntentId is required");
+    }
+
+    const stripe = new Stripe(stripeSecretKey.value());
+    const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+    if (pi.status !== "succeeded") {
+      throw new HttpsError("failed-precondition", `Payment not yet confirmed (status: ${pi.status})`);
+    }
+
+    const orderId = pi.metadata?.orderId;
+    if (!orderId) {
+      throw new HttpsError("not-found", "No order associated with this payment");
+    }
+
+    const db = admin.firestore();
+    const orderSnap = await db.collection("orders").doc(orderId).get();
+    if (!orderSnap.exists) {
+      throw new HttpsError("not-found", `Order ${orderId} not found`);
+    }
+
+    const currentStatus = (orderSnap.data() as {status?: string})?.status;
+    // Idempotent: skip if already paid
+    if (currentStatus === "paid" || currentStatus === "shipped" || currentStatus === "delivered") {
+      return {orderId, alreadyPaid: true};
+    }
+
+    const updateData: Record<string, unknown> = {
+      status: "paid",
+      stripePaymentIntentId: pi.id,
+      expiresAt: admin.firestore.FieldValue.delete(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    // Copy shipping from Stripe PI if not already saved (webhook fallback)
+    const existing = orderSnap.data() as {customer?: {name?: string}};
+    if (!existing.customer?.name && pi.shipping) {
+      const addr = pi.shipping.address;
+      updateData.customer = {
+        name: pi.shipping.name ?? "",
+        email: pi.receipt_email ?? "",
+        address: {
+          line1: addr?.line1 ?? "",
+          ...(addr?.line2 ? {line2: addr.line2} : {}),
+          city: addr?.city ?? "",
+          state: addr?.state ?? "",
+          zip: addr?.postal_code ?? "",
+          country: addr?.country ?? "US",
+        },
+      };
+    }
+
+    await db.collection("orders").doc(orderId).update(updateData);
+    return {orderId, alreadyPaid: false};
+  }
+);
+
+/**
+ * Deletes all pending orders older than 4 hours. One-time / on-demand admin action.
+ * After this runs, new pending orders auto-expire via Firestore TTL after 24 h.
+ */
+export const purgeStalePendingOrders = onCall(
+  {cors: ALLOWED_ORIGINS},
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be signed in");
+    }
+
+    const db = admin.firestore();
+    const cutoff = admin.firestore.Timestamp.fromMillis(Date.now() - 4 * 60 * 60 * 1000);
+
+    const snap = await db.collection("orders")
+      .where("status", "==", "pending")
+      .where("createdAt", "<", cutoff)
+      .get();
+
+    if (snap.empty) return {deleted: 0};
+
+    for (let i = 0; i < snap.docs.length; i += 500) {
+      const batch = db.batch();
+      snap.docs.slice(i, i + 500).forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    }
+
+    return {deleted: snap.size};
   }
 );

@@ -65,7 +65,7 @@ export default function CartDrawer() {
               {items.map((item) => {
                 const displayPrice = item.salePrice !== null ? item.salePrice : item.price
                 return (
-                  <li key={item.productId} className="flex gap-4 py-3 border-b border-[#F5E6D3] last:border-0">
+                  <li key={item.cartItemId} className="flex gap-4 py-3 border-b border-[#F5E6D3] last:border-0">
                     <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-[#F5E6D3]">
                       <img
                         src={item.image}
@@ -78,6 +78,15 @@ export default function CartDrawer() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-[#3E2C1F] text-sm leading-tight">{item.name}</p>
+                      {item.selections && item.selections.length > 0 && (
+                        <ul className="mt-0.5 space-y-0.5">
+                          {item.selections.map((s, i) => (
+                            <li key={i} className="text-xs text-[#9B8B7E]">
+                              {s.slotLabel}: {s.productName}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                       <div className="flex items-center gap-2 mt-1">
                         <span className="font-bold text-[#E8B55F]">${displayPrice.toFixed(2)}</span>
                         {item.salePrice !== null && (
@@ -86,7 +95,7 @@ export default function CartDrawer() {
                       </div>
                       <div className="flex items-center gap-2 mt-2">
                         <button
-                          onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                          onClick={() => updateQuantity(item.cartItemId, item.quantity - 1)}
                           className="w-7 h-7 rounded-full border border-[#E8B55F] text-[#E8B55F] flex items-center justify-center hover:bg-[#E8B55F] hover:text-white transition-colors text-lg leading-none"
                           aria-label="Decrease quantity"
                         >
@@ -94,14 +103,14 @@ export default function CartDrawer() {
                         </button>
                         <span className="w-6 text-center text-sm font-medium text-[#3E2C1F]">{item.quantity}</span>
                         <button
-                          onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                          onClick={() => updateQuantity(item.cartItemId, item.quantity + 1)}
                           className="w-7 h-7 rounded-full border border-[#E8B55F] text-[#E8B55F] flex items-center justify-center hover:bg-[#E8B55F] hover:text-white transition-colors text-lg leading-none"
                           aria-label="Increase quantity"
                         >
                           +
                         </button>
                         <button
-                          onClick={() => removeItem(item.productId)}
+                          onClick={() => removeItem(item.cartItemId)}
                           className="ml-auto text-[#9B8B7E] hover:text-red-500 transition-colors"
                           aria-label="Remove item"
                         >

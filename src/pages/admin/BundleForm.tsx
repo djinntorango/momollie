@@ -1,44 +1,29 @@
-import { useState, useRef } from 'react'
-import type { Product, ProductImage } from '@/data/products'
-import { uploadProductImage } from '@/lib/productService'
-import { categories } from '@/data/products'
+import { useState, useEffect, useRef } from 'react'
+import type { Product, ProductImage, BundleSlot } from '@/data/products'
+import { getProducts, uploadProductImage } from '@/lib/productService'
 import { useLang } from '@/context/LangContext'
 
-export interface ProductFormData {
+export interface BundleFormData {
   name: string
-  displayTitle: string
-  category: string
   price: string
   description: string
   features: string[]
-  materials: string[]
-  lengthIn: string
-  widthIn: string
-  heightIn: string
-  weightLb: string
-  careInstructions: string[]
-  inStock: boolean
-  bestSeller: boolean
-  stockQty: string          // '' = no tracking; '0' = out of stock
-  etsyUrl: string
   images: ProductImage[]
   videoUrl: string
+  inStock: boolean
+  stockQty: string
+  etsyUrl: string
+  slots: { label: string; productIds: string[] }[]
+  weightLb: number  // auto-computed: sum of max weight per slot
 }
 
-interface ProductFormProps {
+interface BundleFormProps {
   initial?: Product
-  onSubmit: (data: ProductFormData) => Promise<void>
+  onSubmit: (data: BundleFormData) => Promise<void>
   submitLabel: string
 }
 
-function parseDimensions(s?: string): { l: string; w: string; h: string } {
-  if (!s) return { l: '', w: '', h: '' }
-  const nums = s.match(/[\d.]+/g)
-  return { l: nums?.[0] ?? '', w: nums?.[1] ?? '', h: nums?.[2] ?? '' }
-}
-
-function toFormData(p?: Product): ProductFormData {
-  const dim = parseDimensions(p?.dimensions)
+function toFormData(p?: Product): BundleFormData {
   let images: ProductImage[] = []
   if (p?.images?.length) {
     images = p.images
@@ -49,23 +34,16 @@ function toFormData(p?: Product): ProductFormData {
   }
   return {
     name: p?.name ?? '',
-    displayTitle: p?.displayTitle ?? '',
-    category: p?.category ?? 'bread-bags',
     price: p?.price?.toString() ?? '',
     description: p?.description ?? '',
     features: p?.features?.length ? p.features : [''],
-    materials: p?.materials?.length ? p.materials : [''],
-    lengthIn: p?.lengthIn?.toString() ?? dim.l,
-    widthIn: p?.widthIn?.toString() ?? dim.w,
-    heightIn: p?.heightIn?.toString() ?? dim.h,
-    weightLb: p?.weightLb?.toString() ?? '',
-    careInstructions: p?.careInstructions?.length ? p.careInstructions : [''],
-    inStock: p?.inStock ?? true,
-    bestSeller: p?.bestSeller ?? false,
-    stockQty: p?.stockQty !== undefined ? String(p.stockQty) : '',
-    etsyUrl: p?.etsyUrl ?? '',
     images,
     videoUrl: p?.videoUrl ?? '',
+    inStock: p?.inStock ?? true,
+    stockQty: p?.stockQty !== undefined ? String(p.stockQty) : '',
+    etsyUrl: p?.etsyUrl ?? '',
+    slots: p?.slots?.length ? p.slots : [{ label: '', productIds: [] }],
+    weightLb: 0,  // computed at submit from flatProducts
   }
 }
 
@@ -105,34 +83,23 @@ function ArrayField({ label, values, onChange, placeholder }: {
   )
 }
 
-function NumericField({ label, value, onChange, placeholder, unit }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string; unit?: string
-}) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      <div className="relative">
-        <input
-          type="number" min="0" step="0.01" value={value}
-          onChange={(e) => onChange(e.target.value)}
-          required placeholder={placeholder}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E8B55F] text-gray-800 pr-10"
-        />
-        {unit && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">{unit}</span>}
-      </div>
-    </div>
-  )
-}
-
-export default function ProductForm({ initial, onSubmit, submitLabel }: ProductFormProps) {
+export default function BundleForm({ initial, onSubmit, submitLabel }: BundleFormProps) {
   const { t } = useLang()
-  const [form, setForm] = useState<ProductFormData>(toFormData(initial))
+  const [form, setForm] = useState<BundleFormData>(toFormData(initial))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [uploadingIdx, setUploadingIdx] = useState<number | null>(null)
+  const [flatProducts, setFlatProducts] = useState<Product[]>([])
+  const [loadingProducts, setLoadingProducts] = useState(true)
   const fileRefs = useRef<(HTMLInputElement | null)[]>([])
 
-  const set = <K extends keyof ProductFormData>(key: K, value: ProductFormData[K]) =>
+  useEffect(() => {
+    getProducts()
+      .then((all) => setFlatProducts(all.filter((p) => p.listingType !== 'bundle')))
+      .finally(() => setLoadingProducts(false))
+  }, [])
+
+  const set = <K extends keyof BundleFormData>(key: K, value: BundleFormData[K]) =>
     setForm((f) => ({ ...f, [key]: value }))
 
   // ── Image management ────────────────────────────────────────────────────────
@@ -168,16 +135,13 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
   const handleMultipleFiles = async (files: FileList) => {
     const arr = Array.from(files)
     if (arr.length === 0) return
-    // Fill the first empty slot, then append new slots for remaining files
     const updated = [...form.images]
     let insertAt = updated.findIndex((img) => !img.url.trim())
     if (insertAt === -1) insertAt = updated.length
-
     for (let k = 0; k < arr.length; k++) {
       if (insertAt + k >= updated.length) updated.push({ url: '', alt: '' })
     }
     set('images', updated)
-
     for (let k = 0; k < arr.length; k++) {
       const idx = insertAt + k
       setUploadingIdx(idx)
@@ -194,6 +158,41 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
     setUploadingIdx(null)
   }
 
+  // ── Slot management ─────────────────────────────────────────────────────────
+
+  const addSlot = () => set('slots', [...form.slots, { label: '', productIds: [] }])
+
+  const removeSlot = (i: number) => set('slots', form.slots.filter((_, idx) => idx !== i))
+
+  const updateSlotLabel = (i: number, label: string) =>
+    set('slots', form.slots.map((s, idx) => idx === i ? { ...s, label } : s))
+
+  const toggleSlotProduct = (slotIdx: number, productId: string) => {
+    set('slots', form.slots.map((slot, idx) => {
+      if (idx !== slotIdx) return slot
+      const has = slot.productIds.includes(productId)
+      return {
+        ...slot,
+        productIds: has
+          ? slot.productIds.filter((id) => id !== productId)
+          : [...slot.productIds, productId],
+      }
+    }))
+  }
+
+  // ── Weight computation ───────────────────────────────────────────────────────
+  // For each slot: take the max weightLb among its eligible products.
+  // Bundle weight = sum of per-slot maxes (conservative upper bound for shipping).
+  const computeWeight = (slots: { productIds: string[] }[]): number => {
+    return slots.reduce((total, slot) => {
+      const weights = slot.productIds
+        .map((pid) => flatProducts.find((p) => p.id === pid)?.weightLb ?? 0)
+        .filter((w) => w > 0)
+      const maxWeight = weights.length > 0 ? Math.max(...weights) : 0
+      return total + maxWeight
+    }, 0)
+  }
+
   // ── Submit ──────────────────────────────────────────────────────────────────
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -207,14 +206,16 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
       setError(t('form.errRequiredFields'))
       return
     }
-    if (!form.lengthIn || !form.widthIn || !form.heightIn || !form.weightLb) {
-      setError(t('form.errDimensions'))
+    const validSlots = form.slots.filter((s) => s.label.trim() && s.productIds.length > 0)
+    if (validSlots.length === 0) {
+      setError('At least one slot with a label and at least one product is required.')
       return
     }
+    const weightLb = computeWeight(validSlots)
     setSaving(true)
     setError('')
     try {
-      await onSubmit({ ...form, images: validImages })
+      await onSubmit({ ...form, images: validImages, slots: validSlots, weightLb })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.')
     } finally {
@@ -236,60 +237,33 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
         <label className="block text-sm font-medium text-gray-700 mb-1">{t('form.productName')}</label>
         <input
           value={form.name} onChange={(e) => set('name', e.target.value)} required
+          placeholder="e.g. Bread Bag Bundle — Choose Your Designs"
           className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E8B55F] text-gray-800"
         />
       </div>
 
-      {/* Display Title */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('form.displayTitle')}</label>
-        <input
-          value={form.displayTitle} onChange={(e) => set('displayTitle', e.target.value)}
-          placeholder={form.name || t('form.displayTitlePlaceholder')}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E8B55F] text-gray-800"
-        />
-        <p className="mt-1 text-xs text-gray-400">{t('form.displayTitleHint')}</p>
-      </div>
-
-      {/* Category + In Stock + Stock Qty */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('form.category')}</label>
-          <select
-            value={form.category} onChange={(e) => set('category', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E8B55F] text-gray-800"
-          >
-            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        </div>
-        <div className="flex flex-col gap-3 items-start pb-1">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input type="checkbox" checked={form.inStock} onChange={(e) => set('inStock', e.target.checked)} className="w-5 h-5 accent-[#E8B55F]" />
-            <span className="text-sm font-medium text-gray-700">{t('form.inStock')}</span>
-          </label>
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input type="checkbox" checked={form.bestSeller} onChange={(e) => set('bestSeller', e.target.checked)} className="w-5 h-5 accent-[#E8B55F]" />
-            <span className="text-sm font-medium text-gray-700">{t('form.bestSeller')}</span>
-          </label>
-        </div>
-      </div>
-
-      {/* Stock Quantity */}
-      <div className="w-48">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {t('form.stockQty')}
-          <span className="ml-2 text-xs text-gray-400 font-normal">{t('form.stockQtyHint')}</span>
+      {/* In Stock + Stock Qty */}
+      <div className="flex items-center gap-6">
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" checked={form.inStock} onChange={(e) => set('inStock', e.target.checked)} className="w-5 h-5 accent-[#E8B55F]" />
+          <span className="text-sm font-medium text-gray-700">{t('form.inStock')}</span>
         </label>
-        <input
-          type="number" min="0" step="1" value={form.stockQty}
-          onChange={(e) => {
-            const val = e.target.value
-            set('stockQty', val)
-            if (val !== '') set('inStock', parseInt(val) > 0)
-          }}
-          placeholder="e.g. 12"
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E8B55F] text-gray-800"
-        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('form.stockQty')}
+            <span className="ml-2 text-xs text-gray-400 font-normal">{t('form.stockQtyHint')}</span>
+          </label>
+          <input
+            type="number" min="0" step="1" value={form.stockQty}
+            onChange={(e) => {
+              const val = e.target.value
+              set('stockQty', val)
+              if (val !== '') set('inStock', parseInt(val) > 0)
+            }}
+            placeholder="e.g. 5"
+            className="w-28 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E8B55F] text-gray-800"
+          />
+        </div>
       </div>
 
       {/* Price */}
@@ -297,7 +271,7 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
         <label className="block text-sm font-medium text-gray-700 mb-1">{t('form.price')}</label>
         <input
           type="number" min="0" step="0.01" value={form.price}
-          onChange={(e) => set('price', e.target.value)} required placeholder="24.99"
+          onChange={(e) => set('price', e.target.value)} required placeholder="49.99"
           className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E8B55F] text-gray-800"
         />
       </div>
@@ -322,11 +296,11 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
           <div className="flex items-center gap-2">
             <input
               type="file" accept="image/*" multiple className="hidden"
-              id="bulk-image-upload"
+              id="bundle-bulk-upload"
               onChange={(e) => { if (e.target.files?.length) handleMultipleFiles(e.target.files); e.target.value = '' }}
             />
             <label
-              htmlFor="bulk-image-upload"
+              htmlFor="bundle-bulk-upload"
               className="cursor-pointer px-3 py-1.5 bg-[#E8B55F] hover:bg-[#D4A04D] text-white rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
@@ -334,12 +308,10 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
             </label>
           </div>
         </div>
-
         <div className="space-y-3">
           {form.images.map((img, i) => (
             <div key={i} className="border border-gray-200 rounded-xl p-3 bg-gray-50">
               <div className="flex items-start gap-3">
-                {/* Thumbnail preview */}
                 <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-gray-200 border border-gray-200">
                   {img.url ? (
                     <img src={img.url} alt={img.alt || 'Preview'} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '' }} />
@@ -351,13 +323,9 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
                     </div>
                   )}
                 </div>
-
-                {/* Inputs */}
                 <div className="flex-1 space-y-2 min-w-0">
                   <div className="flex items-center gap-2">
-                    {i === 0 && (
-                      <span className="text-xs font-semibold text-[#E8B55F] uppercase tracking-wide">{t('form.primary')}</span>
-                    )}
+                    {i === 0 && <span className="text-xs font-semibold text-[#E8B55F] uppercase tracking-wide">{t('form.primary')}</span>}
                     {i > 0 && <span className="text-xs text-gray-400">{t('form.imageN', { n: i + 1 })}</span>}
                   </div>
                   <div className="flex gap-2">
@@ -388,8 +356,6 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
                     className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#E8B55F] text-gray-800"
                   />
                 </div>
-
-                {/* Controls */}
                 <div className="flex flex-col gap-1 flex-shrink-0">
                   <button type="button" onClick={() => moveImage(i, -1)} disabled={i === 0} className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30" title="Move up">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
@@ -407,7 +373,6 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
             </div>
           ))}
         </div>
-
         <button type="button" onClick={addImageSlot} className="mt-3 text-sm text-[#E8B55F] hover:text-[#D4A04D] font-medium flex items-center gap-1">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
           {t('form.addImage')}
@@ -429,13 +394,7 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
         />
         {ytId && (
           <div className="mt-2 rounded-lg overflow-hidden border border-gray-200 aspect-video max-w-xs">
-            <iframe
-              src={`https://www.youtube.com/embed/${ytId}`}
-              className="w-full h-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              title="Video preview"
-            />
+            <iframe src={`https://www.youtube.com/embed/${ytId}`} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title="Video preview" />
           </div>
         )}
         {isDirectVideo && (
@@ -443,23 +402,75 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
         )}
       </div>
 
-      {/* Dimensions & Weight */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">
-          {t('form.dimensions')}
-          <span className="ml-2 text-xs text-gray-400 font-normal">{t('form.dimensionsHint')}</span>
-        </label>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <NumericField label={t('form.length')} value={form.lengthIn} onChange={(v) => set('lengthIn', v)} placeholder="14" unit="in" />
-          <NumericField label={t('form.width')} value={form.widthIn} onChange={(v) => set('widthIn', v)} placeholder="10" unit="in" />
-          <NumericField label={t('form.height')} value={form.heightIn} onChange={(v) => set('heightIn', v)} placeholder="4" unit="in" />
-          <NumericField label={t('form.weight')} value={form.weightLb} onChange={(v) => set('weightLb', v)} placeholder="0.5" unit="lb" />
-        </div>
-      </div>
 
-      <ArrayField label={t('form.features')} values={form.features} onChange={(v) => set('features', v)} placeholder="e.g. 100% plastic-free and biodegradable" />
-      <ArrayField label={t('form.materials')} values={form.materials} onChange={(v) => set('materials', v)} placeholder="e.g. Organic cotton" />
-      <ArrayField label={t('form.careInstructions')} values={form.careInstructions} onChange={(v) => set('careInstructions', v)} placeholder="e.g. Hand wash in cool water with mild soap" />
+      <ArrayField label={t('form.features')} values={form.features} onChange={(v) => set('features', v)} placeholder="e.g. Mix and match your favorite designs" />
+
+      {/* Bundle Slots */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="text-sm font-medium text-gray-700">Bundle Slots</h3>
+            <p className="text-xs text-gray-400 mt-0.5">Each slot lets the customer choose one product from the options you select.</p>
+          </div>
+          <button type="button" onClick={addSlot} className="text-xs text-[#E8B55F] hover:text-[#D4A04D] font-medium px-3 py-1.5 border border-[#E8B55F] rounded-lg">
+            + Add Slot
+          </button>
+        </div>
+
+        {loadingProducts ? (
+          <div className="flex items-center gap-2 text-sm text-gray-400 py-4">
+            <div className="w-4 h-4 border-2 border-[#E8B55F] border-t-transparent rounded-full animate-spin" />
+            Loading products…
+          </div>
+        ) : flatProducts.length === 0 ? (
+          <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-lg text-sm">
+            No flat listings found. Create some individual product listings first, then bundle them here.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {form.slots.map((slot, i) => (
+              <div key={i} className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+                <div className="flex items-center gap-3 mb-3">
+                  <input
+                    value={slot.label}
+                    onChange={(e) => updateSlotLabel(i, e.target.value)}
+                    placeholder={`Slot ${i + 1} label (e.g. "Bag 1")`}
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E8B55F] text-gray-800 bg-white"
+                  />
+                  {form.slots.length > 1 && (
+                    <button type="button" onClick={() => removeSlot(i)} className="text-red-400 hover:text-red-600 p-1" title="Remove slot">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mb-2">Which products can be chosen for this slot?</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {flatProducts.map((p) => {
+                    const checked = slot.productIds.includes(p.id)
+                    return (
+                      <label key={p.id} className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-sm transition-colors ${checked ? 'border-[#E8B55F] bg-amber-50' : 'border-gray-200 hover:border-amber-300 bg-white'}`}>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleSlotProduct(i, p.id)}
+                          className="w-4 h-4 accent-[#E8B55F]"
+                        />
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-800 truncate">{p.name}</p>
+                          <p className="text-xs text-gray-400">${p.price.toFixed(2)}</p>
+                        </div>
+                      </label>
+                    )
+                  })}
+                </div>
+                {slot.productIds.length > 0 && (
+                  <p className="mt-2 text-xs text-amber-700">{slot.productIds.length} product{slot.productIds.length !== 1 ? 's' : ''} selected</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Etsy URL */}
       <div>
@@ -484,3 +495,5 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
     </form>
   )
 }
+
+export type { BundleSlot }

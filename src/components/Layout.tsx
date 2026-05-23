@@ -15,10 +15,10 @@ export default function Layout() {
           <p className="text-lg font-bold text-white mb-1">Dear Momollie</p>
           <p className="text-xs text-white/40 uppercase tracking-widest mb-4">Handcrafted with love</p>
           <a
-            href="mailto:hello@momollie.me"
+            href="mailto:hello@dearmomollie.com"
             className="text-sm text-[#E8B55F] hover:text-[#D4A04D] transition-colors"
           >
-            hello@momollie.me
+            hello@dearmomollie.com
           </a>
           <div className="flex items-center justify-center gap-4 mt-4">
             <Link to="/terms" className="text-xs text-white/40 hover:text-white/70 transition-colors">

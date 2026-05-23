@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { httpsCallable } from 'firebase/functions'
 import { functions } from '@/lib/firebase'
-import { getOrders, updateOrder, updateOrderAddress } from '@/lib/orderService'
+import { subscribeOrders, updateOrder, updateOrderAddress } from '@/lib/orderService'
 import type { Order } from '@/data/products'
 import { useLang } from '@/context/LangContext'
 
@@ -742,10 +742,11 @@ export default function AdminOrders() {
   const PAGE_SIZE = 25
 
   useEffect(() => {
-    getOrders()
-      .then(setOrders)
-      .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)))
-      .finally(() => setLoading(false))
+    const unsub = subscribeOrders(
+      (orders) => { setOrders(orders); setLoading(false) },
+      (err) => { setError(err.message); setLoading(false) }
+    )
+    return unsub
   }, [])
 
   // Reset to page 1 whenever filters change

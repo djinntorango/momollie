@@ -122,6 +122,7 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
   const [shippingTier, setShippingTier] = useState<'standard' | 'priority' | null>(null)
   const [estimate, setEstimate] = useState<ShippingEstimate | null>(null)
   const [estimateLoading, setEstimateLoading] = useState(false)
+  const [estimateError, setEstimateError] = useState<string | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Step 2 → 3 finalization
@@ -143,10 +144,12 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
       if (!/^\d{5}$/.test(zip)) {
         setEstimate(null)
         setShippingTier(null)
+        setEstimateError(null)
         return
       }
       debounceRef.current = setTimeout(async () => {
         setEstimateLoading(true)
+        setEstimateError(null)
         try {
           const fn = httpsCallable<
             { destinationZip: string; items: Array<{ productId: string; quantity: number; selections?: { productId: string }[] }> },
@@ -157,6 +160,7 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
           setShippingTier((prev) => prev ?? 'standard')
         } catch {
           setEstimate(null)
+          setEstimateError("We couldn't find shipping rates for this ZIP code. Please check your address and try again.")
         } finally {
           setEstimateLoading(false)
         }
@@ -174,6 +178,7 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
       } else if (event.value.address.postal_code !== address?.address.postal_code) {
         setEstimate(null)
         setShippingTier(null)
+        setEstimateError(null)
       }
     },
     [address?.address.postal_code, fetchEstimate]
@@ -196,13 +201,29 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
     setFinalizeError(null)
     try {
       const finalizeFn = httpsCallable<
-        { paymentIntentId: string; shippingTier: string; destinationZip: string },
+        {
+          paymentIntentId: string
+          shippingTier: string
+          destinationZip: string
+          shippingAddress: { name: string; line1: string; line2?: string; city: string; state: string; zip: string; country: string }
+          email: string
+        },
         { totalCents: number; shippingCostCents: number; taxCents: number; taxError: string | null }
       >(functions(), 'finalizePaymentIntent')
       const result = await finalizeFn({
         paymentIntentId,
         shippingTier,
         destinationZip: address.address.postal_code,
+        shippingAddress: {
+          name: address.name,
+          line1: address.address.line1,
+          ...(address.address.line2 != null ? { line2: address.address.line2 } : {}),
+          city: address.address.city,
+          state: address.address.state,
+          zip: address.address.postal_code,
+          country: address.address.country,
+        },
+        email,
       })
       setFinalizedTotalCents(result.data.totalCents)
       setFinalizedShippingCents(result.data.shippingCostCents)
@@ -229,18 +250,6 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
         confirmParams: {
           return_url: `${window.location.origin}/checkout/success`,
           receipt_email: email,
-
-          shipping: {
-            name: address.name,
-            address: {
-              line1: address.address.line1,
-              ...(address.address.line2 != null ? { line2: address.address.line2 } : {}),
-              city: address.address.city,
-              state: address.address.state,
-              postal_code: address.address.postal_code,
-              country: address.address.country,
-            },
-          },
         },
         redirect: 'if_required',
       })
@@ -252,6 +261,11 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
       }
 
       if (paymentIntent?.status === 'succeeded') {
+        // Confirm order server-side (verifies with Stripe, marks as paid)
+        const completeFn = httpsCallable<{ paymentIntentId: string }, { orderId: string }>(
+          functions(), 'completeOrder'
+        )
+        completeFn({ paymentIntentId: paymentIntent.id }).catch(() => {/* webhook will catch it */})
         clearCart()
         navigate('/checkout/success')
       }
@@ -281,7 +295,7 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
               setStep(2)
             }
           }}
-          className="w-full px-4 py-3 border border-[#E8B55F]/50 rounded-lg text-[#3E2C1F] placeholder-[#C4B5A8] focus:outline-none focus:ring-2 focus:ring-[#E8B55F] bg-white text-sm"
+          className="w-full px-4 py-3 border border-[#E8B55F]/50 rounded-lg text-[#3E2C1F] placeholder-[#C4B5A8] focus:outline-none focus:ring-2 focus:ring-[#E8B55F] bg-white text-sm shadow-sm"
           autoComplete="email"
           autoFocus
         />
@@ -337,6 +351,12 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
           options={{ mode: 'shipping', allowedCountries: ['US'] }}
           onChange={handleAddressChange}
         />
+
+        {estimateError && !estimateLoading && (
+          <p className="mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+            {estimateError}
+          </p>
+        )}
 
         {/* Shipping method — appears once ZIP is known */}
         {(estimateLoading || estimate) && (
@@ -601,6 +621,11 @@ export default function Checkout() {
             colorBackground: '#FFFFFF',
             fontFamily: 'Georgia, serif',
             borderRadius: '8px',
+          },
+          rules: {
+            '.Input': {
+              boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.06)',
+            },
           },
         },
       }

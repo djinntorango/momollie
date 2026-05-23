@@ -6,7 +6,10 @@ service firebase.storage {
     // Product images: anyone can read, only authenticated users can upload
     match /products/{allPaths=**} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if request.auth != null && (
+        request.auth.uid == "gYhf2cyummQW10nXo6SV8ails833" ||
+        request.auth.uid == "cUuSeqAN77VkADtHpjX286J0Xm33"
+      );
     }
   }
 }

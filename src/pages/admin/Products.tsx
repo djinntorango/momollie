@@ -83,17 +83,25 @@ export default function AdminProducts() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">{t('products.title')}</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Listings</h1>
           <p className="text-gray-500 text-sm mt-1">
             {products.length} {products.length !== 1 ? t('products.listings') : t('products.listing')}
           </p>
         </div>
-        <Link
-          to="/admin/products/new"
-          className="bg-[#E8B55F] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#D4A04D] transition-colors shadow-sm"
-        >
-          {t('products.new')}
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/admin/listings/new-bundle"
+            className="border border-[#E8B55F] text-[#E8B55F] px-4 py-2.5 rounded-lg font-medium hover:bg-amber-50 transition-colors text-sm"
+          >
+            + New Bundle
+          </Link>
+          <Link
+            to="/admin/listings/new"
+            className="bg-[#E8B55F] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#D4A04D] transition-colors shadow-sm"
+          >
+            + New Listing
+          </Link>
+        </div>
       </div>
 
       {fetching ? (
@@ -104,7 +112,7 @@ export default function AdminProducts() {
         <div className="text-center py-24 bg-white rounded-2xl border border-gray-100 shadow-sm">
           <p className="text-gray-400 mb-4 text-lg">{t('products.noProducts')}</p>
           <Link
-            to="/admin/products/new"
+            to="/admin/listings/new"
             className="inline-block bg-[#E8B55F] text-white px-6 py-2.5 rounded-lg font-medium hover:bg-[#D4A04D] transition-colors"
           >
             {t('products.createFirst')}
@@ -134,10 +142,10 @@ export default function AdminProducts() {
                       </div>
                       <div>
                         <span className="font-medium text-gray-800 line-clamp-2">{product.name}</span>
-                        {product.bundledItems && product.bundledItems.length > 0 && (
+                        {product.listingType === 'bundle' && (
                           <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-                            Bundle · {product.bundledItems.length} items
+                            Bundle · {product.slots?.length ?? 0} slot{(product.slots?.length ?? 0) !== 1 ? 's' : ''}
                           </span>
                         )}
                       </div>
@@ -189,7 +197,9 @@ export default function AdminProducts() {
                   <td className="px-4 py-4 text-right">
                     <div className="flex items-center justify-end gap-3">
                       <Link
-                        to={`/admin/products/${product.id}/edit`}
+                        to={product.listingType === 'bundle'
+                          ? `/admin/listings/${product.id}/edit-bundle`
+                          : `/admin/listings/${product.id}/edit`}
                         className="text-[#E8B55F] hover:text-[#D4A04D] font-medium transition-colors"
                       >
                         {t('products.edit')}
