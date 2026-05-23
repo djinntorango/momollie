@@ -1,13 +1,5 @@
 User-agent: *
 Allow: /
-
-# Sitemap
-Sitemap: https://dearmomollie.com/sitemap.xml
-
-# Block crawlers from admin and private areas
 Disallow: /admin/
-Disallow: /_next/
-Disallow: /api/
 
-# Allow all search engines to crawl the site
-Crawl-delay: 1
+Sitemap: https://dearmomollie.com/sitemap.xml
