@@ -7,6 +7,9 @@ import HowToStoreSourdough from './blog/HowToStoreSourdough'
 import BreadStorageMethods from './blog/BreadStorageMethods'
 import PlasticFreeKitchenSwaps from './blog/PlasticFreeKitchenSwaps'
 import CaringForBeeswaxBags from './blog/CaringForBeeswaxBags'
+import GiftsForSourdoughBakers from './blog/GiftsForSourdoughBakers'
+import HowLongDoesSourdoughLast from './blog/HowLongDoesSourdoughLast'
+import BeeswaxWrapVsBag from './blog/BeeswaxWrapVsBag'
 
 const blogComponents: Record<string, React.ComponentType> = {
   'beeswax-bread-storage-benefits': BeeswaxBreadStorageBenefits,
@@ -17,6 +20,9 @@ const blogComponents: Record<string, React.ComponentType> = {
   'bread-storage-methods-compared': BreadStorageMethods,
   'plastic-free-kitchen-swaps': PlasticFreeKitchenSwaps,
   'caring-for-beeswax-bread-bags': CaringForBeeswaxBags,
+  'gifts-for-sourdough-bakers': GiftsForSourdoughBakers,
+  'how-long-does-sourdough-last': HowLongDoesSourdoughLast,
+  'beeswax-wrap-vs-beeswax-bag': BeeswaxWrapVsBag,
 }
 
 export default function BlogPost() {

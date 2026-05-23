@@ -81,6 +81,36 @@ const blogPosts = [
     readTime: '5 min read',
     slug: 'caring-for-beeswax-bread-bags',
   },
+  {
+    id: 'gifts-for-sourdough-bakers',
+    title: 'The Best Gifts for Sourdough Bakers (That They\'ll Actually Use)',
+    excerpt: 'Shopping for someone obsessed with sourdough? Skip the novelty mugs. Here are the gifts that serious home bakers actually want.',
+    date: 'May 23, 2025',
+    category: 'Gift Ideas',
+    image: '/cover.png',
+    readTime: '6 min read',
+    slug: 'gifts-for-sourdough-bakers',
+  },
+  {
+    id: 'how-long-does-sourdough-last',
+    title: 'How Long Does Sourdough Bread Last? (And How to Make It Last Longer)',
+    excerpt: 'Sourdough keeps longer than commercial bread — but only if you store it right. An honest breakdown by storage method.',
+    date: 'May 23, 2025',
+    category: 'Baking Mastery',
+    image: '/bake.png',
+    readTime: '5 min read',
+    slug: 'how-long-does-sourdough-last',
+  },
+  {
+    id: 'beeswax-wrap-vs-beeswax-bag',
+    title: 'Beeswax Wrap vs Beeswax Bread Bag: Which Do You Actually Need?',
+    excerpt: 'Both are plastic-free and use beeswax — but they do very different jobs. Here\'s an honest comparison so you know which one is right for your kitchen.',
+    date: 'May 23, 2025',
+    category: 'Sustainable Living',
+    image: '/bag2.jpg',
+    readTime: '5 min read',
+    slug: 'beeswax-wrap-vs-beeswax-bag',
+  },
 ]
 
 export default function BlogPage() {
