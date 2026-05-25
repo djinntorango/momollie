@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getProducts, deleteProduct, updateProduct } from '@/lib/productService'
+import { getProducts, deleteProduct, updateProduct, reorderProducts } from '@/lib/productService'
 import type { Product } from '@/data/products'
 import { categories } from '@/data/products'
 import { useLang } from '@/context/LangContext'
@@ -22,14 +22,51 @@ export default function AdminProducts() {
   const [fetching, setFetching] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [savingStockId, setSavingStockId] = useState<string | null>(null)
-  // draft stock values while user is typing
   const [stockDraft, setStockDraft] = useState<Record<string, string>>({})
+
+  // Drag-to-reorder state
+  const [isDirty, setIsDirty] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const dragIdx = useRef<number | null>(null)
+  const [overIdx, setOverIdx] = useState<number | null>(null)
 
   useEffect(() => {
     getProducts()
       .then(setProducts)
       .finally(() => setFetching(false))
   }, [])
+
+  const handleDragStart = (idx: number) => { dragIdx.current = idx }
+  const handleDragOver = (e: React.DragEvent, idx: number) => {
+    e.preventDefault()
+    setOverIdx(idx)
+  }
+  const handleDrop = (idx: number) => {
+    const from = dragIdx.current
+    if (from === null || from === idx) { dragIdx.current = null; setOverIdx(null); return }
+    setProducts((prev) => {
+      const next = [...prev]
+      const [item] = next.splice(from, 1)
+      next.splice(idx, 0, item)
+      return next
+    })
+    setIsDirty(true)
+    dragIdx.current = null
+    setOverIdx(null)
+  }
+  const handleDragEnd = () => { dragIdx.current = null; setOverIdx(null) }
+
+  const saveOrder = async () => {
+    setSaving(true)
+    try {
+      await reorderProducts(products.map((p) => p.id))
+      setIsDirty(false)
+    } catch {
+      alert('Failed to save order. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const handleDelete = async (product: Product) => {
     if (!confirm(t('products.confirmDelete', { name: product.name }))) return
@@ -89,6 +126,23 @@ export default function AdminProducts() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {isDirty && (
+            <button
+              onClick={saveOrder}
+              disabled={saving}
+              className="bg-green-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-green-700 transition-colors shadow-sm text-sm disabled:opacity-60 flex items-center gap-2"
+            >
+              {saving ? (
+                <>
+                  <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  Saving…
+                </>
+              ) : 'Save order'}
+            </button>
+          )}
           <Link
             to="/admin/listings/new-bundle"
             className="border border-[#E8B55F] text-[#E8B55F] px-4 py-2.5 rounded-lg font-medium hover:bg-amber-50 transition-colors text-sm"
@@ -123,6 +177,7 @@ export default function AdminProducts() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
+                <th className="w-8 px-3 py-3" />
                 <th className="text-left px-6 py-3 text-gray-500 font-medium">{t('products.colProduct')}</th>
                 <th className="text-left px-4 py-3 text-gray-500 font-medium hidden md:table-cell">{t('products.colCategory')}</th>
                 <th className="text-left px-4 py-3 text-gray-500 font-medium">{t('products.colPrice')}</th>
@@ -131,8 +186,23 @@ export default function AdminProducts() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {products.map((product) => (
-                <tr key={product.id} className="hover:bg-gray-50 transition-colors">
+              {products.map((product, idx) => (
+                <tr
+                  key={product.id}
+                  draggable
+                  onDragStart={() => handleDragStart(idx)}
+                  onDragOver={(e) => handleDragOver(e, idx)}
+                  onDrop={() => handleDrop(idx)}
+                  onDragEnd={handleDragEnd}
+                  className={`transition-colors ${overIdx === idx ? 'bg-amber-50 border-t-2 border-[#E8B55F]' : 'hover:bg-gray-50'}`}
+                >
+                  <td className="pl-3 pr-1 py-4 cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 select-none">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/>
+                      <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+                      <circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/>
+                    </svg>
+                  </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">

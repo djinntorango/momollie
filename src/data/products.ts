@@ -12,6 +12,7 @@ export interface Product {
   id: string;
   name: string;
   displayTitle?: string;
+  sortOrder?: number;
   category: string;
   price: number;
   salePercent?: number;

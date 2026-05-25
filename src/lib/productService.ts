@@ -9,6 +9,7 @@ import {
   query,
   orderBy,
   serverTimestamp,
+  writeBatch,
   Timestamp,
 } from 'firebase/firestore';
 import {
@@ -44,7 +45,23 @@ function fromDoc(id: string, data: Record<string, unknown>): Product {
 export async function getProducts(): Promise<Product[]> {
   const q = query(collection(db(), COLLECTION), orderBy('createdAt', 'desc'));
   const snapshot = await getDocs(q);
-  return snapshot.docs.map((d) => fromDoc(d.id, d.data() as Record<string, unknown>));
+  const products = snapshot.docs.map((d) => fromDoc(d.id, d.data() as Record<string, unknown>));
+  return products.sort((a, b) => {
+    const aHas = a.sortOrder !== undefined;
+    const bHas = b.sortOrder !== undefined;
+    if (aHas && bHas) return a.sortOrder! - b.sortOrder!;
+    if (aHas) return -1;
+    if (bHas) return 1;
+    return 0; // both undefined: preserve createdAt desc order from Firestore
+  });
+}
+
+export async function reorderProducts(orderedIds: string[]): Promise<void> {
+  const batch = writeBatch(db());
+  orderedIds.forEach((id, index) => {
+    batch.update(doc(db(), COLLECTION, id), { sortOrder: index });
+  });
+  await batch.commit();
 }
 
 export async function getProduct(id: string): Promise<Product | null> {
