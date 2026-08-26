@@ -3,7 +3,8 @@ import {defineSecret} from "firebase-functions/params";
 import Stripe from "stripe";
 import * as admin from "firebase-admin";
 import {getShippingRateOptions, ShippoAddress} from "./shippoClient.js";
-import {resendApiKey, sendOrderConfirmation} from "./email.js";
+import {resendApiKey, sendOrderConfirmation, sendNewOrderAlert} from "./email.js";
+import {claimOrderForFulfillment, decrementStockForOrder, sendOrderEmails, OrderData} from "./orderFulfillment.js";
 
 import {isAdmin} from "./config.js";
 
@@ -319,7 +320,6 @@ export const stripeWebhook = onRequest(
       if (orderId) {
         const db = admin.firestore();
 
-        // Build the update: always mark paid, only update customer if not already set
         const orderSnap = await db.collection("orders").doc(orderId).get();
         const existingCustomer = (orderSnap.data() as {customer?: {name?: string}} | undefined)?.customer;
 
@@ -351,68 +351,20 @@ export const stripeWebhook = onRequest(
           baseUpdate["customer.email"] = pi.receipt_email;
         }
 
-        await db.collection("orders").doc(orderId).update(baseUpdate);
+        // Only the caller that wins this claim runs fulfillment (stock decrement + emails) —
+        // guards against double-processing when completeOrder already won the race.
+        const {claimed, orderData} = await claimOrderForFulfillment(db, orderId, baseUpdate);
 
-        // Atomically decrement stockQty for each purchased product
-        const orderForStock = await db.collection("orders").doc(orderId).get();
-        const orderItemsForStock = (orderForStock.data() as {items?: Array<{productId: string; quantity: number}>})?.items ?? [];
-        await Promise.all(
-          orderItemsForStock.map(async (item) => {
-            const productRef = db.collection("products").doc(item.productId);
-            await db.runTransaction(async (tx) => {
-              const snap = await tx.get(productRef);
-              if (!snap.exists) return;
-              const product = snap.data() as FirestoreProduct;
-              if (typeof product.stockQty !== "number") return; // no tracking
-              const newQty = Math.max(0, product.stockQty - item.quantity);
-              tx.update(productRef, {
-                stockQty: newQty,
-                ...(newQty === 0 ? {inStock: false} : {}),
-              });
-            });
-          })
-        );
+        if (claimed && orderData) {
+          const items = orderData.items ?? [];
+          await decrementStockForOrder(db, items);
 
-        // Fetch fresh order data for confirmation email
-        const freshSnap = await db.collection("orders").doc(orderId).get();
-        const orderData = freshSnap.data() as {
-          items?: Array<{name: string; quantity: number; price: number}>;
-          subtotal?: number;
-          total?: number;
-          shippingTier?: "standard" | "priority";
-          customer?: {name?: string; email?: string; address?: {line1?: string; line2?: string; city?: string; state?: string; zip?: string; country?: string}};
-        } | undefined;
-
-        const emailTo = orderData?.customer?.email ?? pi.receipt_email ?? "";
-        const nameFor = orderData?.customer?.name ?? "";
-        const addrFor = orderData?.customer?.address;
-
-        if (emailTo && orderData) {
-          try {
-            await sendOrderConfirmation(resendApiKey.value(), {
-              orderId,
-              customerName: nameFor,
-              customerEmail: emailTo,
-              items: (orderData.items ?? []).map((i) => ({
-                name: i.name,
-                quantity: i.quantity,
-                price: i.price,
-              })),
-              subtotal: orderData.subtotal ?? pi.amount / 100,
-              total: orderData.total ?? pi.amount / 100,
-              shippingTier: orderData.shippingTier ?? "standard",
-              address: {
-                line1: addrFor?.line1 ?? "",
-                ...(addrFor?.line2 ? {line2: addrFor.line2} : {}),
-                city: addrFor?.city ?? "",
-                state: addrFor?.state ?? "",
-                zip: addrFor?.zip ?? "",
-                country: addrFor?.country ?? "US",
-              },
-            });
-          } catch (emailErr) {
-            console.error("[stripeWebhook/payment_intent.succeeded] Failed to send confirmation email:", emailErr);
-          }
+          // Merge in the customer info we just wrote, since orderData is from before the update
+          const mergedOrderData: OrderData = {
+            ...orderData,
+            customer: (baseUpdate.customer as OrderData["customer"] | undefined) ?? orderData.customer,
+          };
+          await sendOrderEmails(resendApiKey.value(), orderId, mergedOrderData, pi.receipt_email ?? "");
         }
       }
 
@@ -522,6 +474,30 @@ export const stripeWebhook = onRequest(
         } catch (emailErr) {
           console.error("[stripeWebhook] Failed to send order confirmation email:", emailErr);
         }
+      }
+
+      try {
+        await sendNewOrderAlert(resendApiKey.value(), {
+          orderId: orderRef.id,
+          customerName,
+          customerEmail,
+          items: items.map((item) => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          total,
+          address: {
+            line1: address?.line1 ?? "",
+            ...(address?.line2 ? {line2: address.line2} : {}),
+            city: address?.city ?? "",
+            state: address?.state ?? "",
+            zip: address?.postal_code ?? "",
+            country: address?.country ?? "US",
+          },
+        });
+      } catch (alertErr) {
+        console.error("[stripeWebhook] Failed to send new order alert:", alertErr);
       }
     }
 

@@ -2,15 +2,16 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {defineSecret} from "firebase-functions/params";
 import Stripe from "stripe";
 import * as admin from "firebase-admin";
-import {getShippingRateOptions, ShippoAddress} from "./shippoClient.js";
+import {getShippingRateOptions, ShippoAddress, PACKAGING, PACKAGING_TARE_LB} from "./shippoClient.js";
+import {applyPromoCode} from "./promoCode.js";
+import {resendApiKey} from "./email.js";
+import {claimOrderForFulfillment, decrementStockForOrder, sendOrderEmails} from "./orderFulfillment.js";
 
 const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
 const shippoApiKey = defineSecret("SHIPPO_API_KEY");
 
 const ALLOWED_ORIGINS = ["https://momollie.web.app", "https://dearmomollie.com", "https://momollie.me"];
-// Poly mailer dimensions — update height/width/length if switching to boxes
-const PACKAGING = {length: "14", width: "10", height: "2", distance_unit: "in", mass_unit: "lb"};
-const PACKAGING_TARE_LB = 0.1; // poly mailer weight
+// PACKAGING and PACKAGING_TARE_LB imported from shippoClient.ts
 
 interface CheckoutItem {
   productId: string;
@@ -26,6 +27,7 @@ interface FirestoreProduct {
   inStock?: boolean;
   stockQty?: number;
   weightLb?: number;
+  freeShipping?: boolean;
 }
 
 interface FirestoreSettings {
@@ -60,6 +62,7 @@ export const createPaymentIntent = onCall(
       price: number;
       quantity: number;
       weightLb: number;
+      freeShipping: boolean;
     }> = [];
 
     for (const item of items) {
@@ -81,8 +84,11 @@ export const createPaymentIntent = onCall(
 
       // For bundles with slot selections, sum the actual selected products' weights.
       // For flat products, use the product's own weightLb.
+      const isFreeShipping = product.freeShipping === true;
       let resolvedWeightLb: number;
-      if (item.selections && item.selections.length > 0) {
+      if (isFreeShipping) {
+        resolvedWeightLb = product.weightLb ?? 0;
+      } else if (item.selections && item.selections.length > 0) {
         const selSnaps = await Promise.all(
           item.selections.map((sel) => db.collection("products").doc(sel.productId).get())
         );
@@ -113,6 +119,7 @@ export const createPaymentIntent = onCall(
         price: unitPrice,
         quantity: item.quantity,
         weightLb: resolvedWeightLb,
+        freeShipping: isFreeShipping,
       });
     }
 
@@ -164,7 +171,7 @@ export const createPaymentIntent = onCall(
 export const finalizePaymentIntent = onCall(
   {secrets: [stripeSecretKey, shippoApiKey], cors: ALLOWED_ORIGINS},
   async (request) => {
-    const {paymentIntentId, shippingTier, destinationZip, shippingAddress, email} = request.data as {
+    const {paymentIntentId, shippingTier, destinationZip, shippingAddress, email, promoCode} = request.data as {
       paymentIntentId: string;
       shippingTier: "standard" | "priority";
       destinationZip: string;
@@ -178,6 +185,7 @@ export const finalizePaymentIntent = onCall(
         country: string;
       };
       email?: string;
+      promoCode?: string;
     };
 
     if (!paymentIntentId || !destinationZip || !shippingTier) {
@@ -204,48 +212,72 @@ export const finalizePaymentIntent = onCall(
       throw new HttpsError("not-found", `Order ${orderId} not found`);
     }
     const orderData = orderSnap.data() as {
-      items: Array<{weightLb?: number; name?: string; quantity: number}>;
+      items: Array<{weightLb?: number; name?: string; quantity: number; freeShipping?: boolean}>;
     };
 
-    const itemsWeight = orderData.items.reduce((sum, item) => {
-      if (!item.weightLb) {
-        throw new HttpsError("failed-precondition", `Item "${item.name}" is missing weight data`);
+    const allFreeShipping = orderData.items.every((i) => i.freeShipping === true);
+
+    let shippingCostCents: number;
+    let shippingServiceLevel: string;
+    let shippoRateId: string | undefined;
+
+    if (allFreeShipping) {
+      shippingCostCents = 0;
+      shippingServiceLevel = "Included";
+    } else {
+      const itemsWeight = orderData.items.reduce((sum, item) => {
+        if (!item.weightLb) {
+          throw new HttpsError("failed-precondition", `Item "${item.name}" is missing weight data`);
+        }
+        return sum + item.weightLb * item.quantity;
+      }, 0);
+      const totalWeightLb = Math.max(itemsWeight + PACKAGING_TARE_LB, 0.1);
+
+      const settingsSnap = await db.collection("settings").doc("shipping").get();
+      const settings = settingsSnap.exists ? (settingsSnap.data() as FirestoreSettings) : {};
+
+      const addressFrom: ShippoAddress = {
+        name: settings.name ?? "Dear Momollie",
+        street1: settings.street1 ?? "123 Bakery Lane",
+        city: settings.city ?? "Portland",
+        state: settings.state ?? "OR",
+        zip: settings.zip ?? "97201",
+        country: settings.country ?? "US",
+      };
+
+      const addressTo: ShippoAddress = {
+        name: "Customer",
+        street1: "1 Main St",
+        city: "",
+        state: "",
+        zip: destinationZip,
+        country: "US",
+      };
+
+      const rates = await getShippingRateOptions(
+        shippoApiKey.value(),
+        addressFrom,
+        addressTo,
+        {...PACKAGING, weight: totalWeightLb.toFixed(2)}
+      );
+
+      const selectedRate = shippingTier === "priority" ? rates.priority : rates.standard;
+      shippingCostCents = selectedRate.amountCents;
+      shippingServiceLevel = selectedRate.serviceLevel;
+      shippoRateId = selectedRate.rateId;
+    }
+
+    // Apply promo code discount (server-side re-validation)
+    let discountCents = 0;
+    let appliedPromoCode: string | null = null;
+    if (promoCode) {
+      const promoResult = await applyPromoCode(db, promoCode, subtotalCents);
+      if (promoResult.valid && promoResult.discountCents) {
+        discountCents = promoResult.discountCents;
+        appliedPromoCode = promoCode.trim().toUpperCase();
       }
-      return sum + item.weightLb * item.quantity;
-    }, 0);
-    const totalWeightLb = Math.max(itemsWeight + PACKAGING_TARE_LB, 0.1);
-
-    // Recalculate shipping from actual destination ZIP
-    const settingsSnap = await db.collection("settings").doc("shipping").get();
-    const settings = settingsSnap.exists ? (settingsSnap.data() as FirestoreSettings) : {};
-
-    const addressFrom: ShippoAddress = {
-      name: settings.name ?? "Dear Momollie",
-      street1: settings.street1 ?? "123 Bakery Lane",
-      city: settings.city ?? "Portland",
-      state: settings.state ?? "OR",
-      zip: settings.zip ?? "97201",
-      country: settings.country ?? "US",
-    };
-
-    const addressTo: ShippoAddress = {
-      name: "Customer",
-      street1: "1 Main St",
-      city: "",
-      state: "",
-      zip: destinationZip,
-      country: "US",
-    };
-
-    const rates = await getShippingRateOptions(
-      shippoApiKey.value(),
-      addressFrom,
-      addressTo,
-      {...PACKAGING, weight: totalWeightLb.toFixed(2)}
-    );
-
-    const selectedRate = shippingTier === "priority" ? rates.priority : rates.standard;
-    const shippingCostCents = selectedRate.amountCents;
+    }
+    const discountedSubtotalCents = subtotalCents - discountCents;
 
     // Calculate tax for the destination ZIP
     let taxCents = 0;
@@ -255,7 +287,7 @@ export const finalizePaymentIntent = onCall(
         currency: "usd",
         line_items: [
           {
-            amount: subtotalCents,
+            amount: discountedSubtotalCents,
             reference: "items",
             tax_code: "txcd_99999999", // general physical goods
           },
@@ -277,7 +309,14 @@ export const finalizePaymentIntent = onCall(
       taxError = msg;
     }
 
-    const totalCents = subtotalCents + shippingCostCents + taxCents;
+    const totalCents = discountedSubtotalCents + shippingCostCents + taxCents;
+
+    // Increment promo code usage count atomically
+    if (appliedPromoCode) {
+      await db.collection("promoCodes").doc(appliedPromoCode).update({
+        usageCount: admin.firestore.FieldValue.increment(1),
+      });
+    }
 
     // Update PaymentIntent with final amount
     await stripe.paymentIntents.update(paymentIntentId, {
@@ -286,8 +325,9 @@ export const finalizePaymentIntent = onCall(
         ...pi.metadata,
         shippingTier,
         shippingCostCents: String(shippingCostCents),
-        shippingServiceLevel: selectedRate.serviceLevel,
+        shippingServiceLevel: shippingServiceLevel,
         taxCents: String(taxCents),
+        ...(appliedPromoCode ? {promoCode: appliedPromoCode, discountCents: String(discountCents)} : {}),
       },
     });
 
@@ -296,6 +336,13 @@ export const finalizePaymentIntent = onCall(
       shippingTier,
       total: totalCents / 100,
       taxAmount: taxCents / 100,
+      // Lock in the Shippo rate so preview and label creation use this exact quote
+      ...(shippoRateId ? {
+        shippoRateId,
+        shippoRateAmountUsd: shippingCostCents / 100,
+        shippoServiceLevel: shippingServiceLevel,
+      } : {}),
+      ...(appliedPromoCode ? {promoCode: appliedPromoCode, discountAmount: discountCents / 100} : {}),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
     if (shippingAddress) {
@@ -317,9 +364,10 @@ export const finalizePaymentIntent = onCall(
     return {
       totalCents,
       shippingCostCents,
-      shippingServiceLevel: selectedRate.serviceLevel,
+      shippingServiceLevel,
       taxCents,
       taxError,
+      discountCents,
     };
   }
 );
@@ -330,7 +378,7 @@ export const finalizePaymentIntent = onCall(
  * This is the primary status update path — the webhook is a secondary fallback.
  */
 export const completeOrder = onCall(
-  {secrets: [stripeSecretKey], cors: ALLOWED_ORIGINS},
+  {secrets: [stripeSecretKey, resendApiKey], cors: ALLOWED_ORIGINS},
   async (request) => {
     const {paymentIntentId} = request.data as {paymentIntentId: string};
     if (!paymentIntentId) {
@@ -353,12 +401,6 @@ export const completeOrder = onCall(
     const orderSnap = await db.collection("orders").doc(orderId).get();
     if (!orderSnap.exists) {
       throw new HttpsError("not-found", `Order ${orderId} not found`);
-    }
-
-    const currentStatus = (orderSnap.data() as {status?: string})?.status;
-    // Idempotent: skip if already paid
-    if (currentStatus === "paid" || currentStatus === "shipped" || currentStatus === "delivered") {
-      return {orderId, alreadyPaid: true};
     }
 
     const updateData: Record<string, unknown> = {
@@ -386,7 +428,22 @@ export const completeOrder = onCall(
       };
     }
 
-    await db.collection("orders").doc(orderId).update(updateData);
+    // Only the caller that wins this claim runs fulfillment (stock decrement + emails) —
+    // guards against double-processing when the webhook already won the race.
+    const {claimed, orderData} = await claimOrderForFulfillment(db, orderId, updateData);
+    if (!claimed) {
+      return {orderId, alreadyPaid: true};
+    }
+
+    if (orderData) {
+      await decrementStockForOrder(db, orderData.items ?? []);
+      const mergedOrderData = {
+        ...orderData,
+        customer: (updateData.customer as typeof orderData.customer | undefined) ?? orderData.customer,
+      };
+      await sendOrderEmails(resendApiKey.value(), orderId, mergedOrderData, pi.receipt_email ?? "");
+    }
+
     return {orderId, alreadyPaid: false};
   }
 );
