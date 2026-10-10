@@ -10,6 +10,7 @@ setGlobalOptions({maxInstances: 10});
 
 export {createCheckoutSession, stripeWebhook, createRefund} from "./stripe.js";
 export {createPaymentIntent, finalizePaymentIntent, completeOrder, purgeStalePendingOrders} from "./paymentIntent.js";
-export {createShippingLabel, previewShippingLabel, verifyOrderAddresses, validateAddress, getShippingEstimate} from "./shippo.js";
+export {createShippingLabel, markOrderShipped, previewShippingLabel, verifyOrderAddresses, validateAddress, getShippingEstimate} from "./shippo.js";
 export {mergeLabelsPdf} from "./pdfMerge.js";
 export {sendContactEmail, sendOrderNote} from "./contact.js";
+export {validatePromoCode} from "./promoCode.js";

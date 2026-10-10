@@ -450,6 +450,110 @@ function SendNoteModal({ order, onClose }: SendNoteModalProps) {
   )
 }
 
+const CARRIER_TRACKING_URLS: Record<string, (n: string) => string> = {
+  USPS: (n) => `https://tools.usps.com/go/TrackConfirmAction?tLabels=${n}`,
+  UPS: (n) => `https://www.ups.com/track?tracknum=${n}`,
+  FedEx: (n) => `https://www.fedex.com/fedextrack/?trknbr=${n}`,
+  DHL: (n) => `https://www.dhl.com/us-en/home/tracking.html?tracking-id=${n}`,
+}
+
+interface MarkShippedModalProps {
+  order: Order
+  onClose: () => void
+  onConfirm: (data: { trackingNumber: string; trackingCarrier: string; trackingUrl: string }) => void
+  loading: boolean
+}
+
+function MarkShippedModal({ order, onClose, onConfirm, loading }: MarkShippedModalProps) {
+  const [trackingNumber, setTrackingNumber] = useState('')
+  const [carrier, setCarrier] = useState('USPS')
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const trackingUrl = trackingNumber.trim() && CARRIER_TRACKING_URLS[carrier]
+      ? CARRIER_TRACKING_URLS[carrier](trackingNumber.trim())
+      : ''
+    onConfirm({ trackingNumber: trackingNumber.trim(), trackingCarrier: carrier, trackingUrl })
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/40" />
+      <div
+        className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-lg font-bold text-[#3E2C1F] mb-1">Mark as Shipped</h2>
+        <p className="text-sm text-[#9B8B7E] mb-5">
+          {order.customer?.name ?? '—'} · Order #{order.id.slice(0, 8).toUpperCase()}
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-[#6B5B4F] mb-1">Carrier</label>
+            <select
+              value={carrier}
+              onChange={(e) => setCarrier(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E8B55F]"
+            >
+              <option>USPS</option>
+              <option>UPS</option>
+              <option>FedEx</option>
+              <option>DHL</option>
+              <option>Other</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[#6B5B4F] mb-1">
+              Tracking Number{' '}
+              <span className="text-[#9B8B7E] font-normal">(optional)</span>
+            </label>
+            <input
+              type="text"
+              value={trackingNumber}
+              onChange={(e) => setTrackingNumber(e.target.value)}
+              placeholder="e.g. 9400111899223493867890"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E8B55F]"
+              autoFocus
+            />
+            {trackingNumber.trim() && CARRIER_TRACKING_URLS[carrier] && (
+              <p className="mt-1 text-xs text-[#9B8B7E]">
+                Tracking link will be auto-generated for {carrier}.
+              </p>
+            )}
+          </div>
+
+          <div className="flex gap-2 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-200 text-[#3E2C1F] rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
+            >
+              {loading ? (
+                <>
+                  <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Saving…
+                </>
+              ) : 'Mark as Shipped'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 function CopyEmailButton({ email }: { email: string }) {
   const { t } = useLang()
   const [copied, setCopied] = useState(false)
@@ -709,6 +813,8 @@ export default function AdminOrders() {
   const [labelLoading, setLabelLoading] = useState<string | null>(null)
   const [labelErrors, setLabelErrors] = useState<Record<string, string>>({})
   const [deliveredLoading, setDeliveredLoading] = useState<string | null>(null)
+  const [markShippedOrder, setMarkShippedOrder] = useState<Order | null>(null)
+  const [markShippedLoading, setMarkShippedLoading] = useState(false)
 
   // Label preview modal
   const [labelPreview, setLabelPreview] = useState<LabelPreview | null>(null)
@@ -799,7 +905,8 @@ export default function AdminOrders() {
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
       return next
     })
   }
@@ -1017,6 +1124,39 @@ export default function AdminOrders() {
     }
   }
 
+  // ── Mark shipped manually ──────────────────────────────────────────────────
+
+  const handleMarkShipped = async (data: { trackingNumber: string; trackingCarrier: string; trackingUrl: string }) => {
+    if (!markShippedOrder) return
+    setMarkShippedLoading(true)
+    try {
+      const patch: Partial<Order> = {
+        status: 'shipped',
+        shippedAt: new Date(),
+        ...(data.trackingNumber ? {
+          trackingNumber: data.trackingNumber,
+          trackingCarrier: data.trackingCarrier,
+          ...(data.trackingUrl ? { trackingUrl: data.trackingUrl } : {}),
+        } : {}),
+      }
+      // Server-side so the customer gets a shipping notification email
+      const fn = httpsCallable<
+        { orderId: string; trackingNumber: string; trackingCarrier: string; trackingUrl: string },
+        { emailSent: boolean }
+      >(functions(), 'markOrderShipped')
+      const result = await fn({ orderId: markShippedOrder.id, ...data })
+      patchOrder(markShippedOrder.id, patch)
+      setMarkShippedOrder(null)
+      if (!result.data.emailSent && markShippedOrder.customer?.email) {
+        alert('Order marked as shipped, but the shipping email to the customer failed to send.')
+      }
+    } catch (err) {
+      alert(`${t('orders.failedUpdate')} ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setMarkShippedLoading(false)
+    }
+  }
+
   // ── Derived counts ─────────────────────────────────────────────────────────
 
   const unverifiedIds = orders
@@ -1058,6 +1198,14 @@ export default function AdminOrders() {
         <SendNoteModal
           order={sendNoteOrder}
           onClose={() => setSendNoteOrder(null)}
+        />
+      )}
+      {markShippedOrder && (
+        <MarkShippedModal
+          order={markShippedOrder}
+          onClose={() => setMarkShippedOrder(null)}
+          onConfirm={handleMarkShipped}
+          loading={markShippedLoading}
         />
       )}
       {labelPreview && (
@@ -1348,26 +1496,34 @@ export default function AdminOrders() {
                       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <div className="flex flex-wrap gap-2">
                           {isLabelable && (
-                            <button
-                              onClick={() => handleCreateLabel(order)}
-                              disabled={labelLoading === order.id}
-                              title={order.addressVerified === false ? 'Address failed verification — label may be rejected' : undefined}
-                              className={`px-3 py-1.5 text-white rounded-lg text-xs font-medium transition-colors disabled:opacity-60 flex items-center gap-1.5 ${
-                                order.addressVerified === false
-                                  ? 'bg-amber-600 hover:bg-amber-700'
-                                  : 'bg-[#3E2C1F] hover:bg-[#2D1F15]'
-                              }`}
-                            >
-                              {labelLoading === order.id ? (
-                                <>
-                                  <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                  </svg>
-                                  {t('orders.creatingLabel')}
-                                </>
-                              ) : t('orders.createLabel')}
-                            </button>
+                            <>
+                              <button
+                                onClick={() => handleCreateLabel(order)}
+                                disabled={labelLoading === order.id}
+                                title={order.addressVerified === false ? 'Address failed verification — label may be rejected' : undefined}
+                                className={`px-3 py-1.5 text-white rounded-lg text-xs font-medium transition-colors disabled:opacity-60 flex items-center gap-1.5 ${
+                                  order.addressVerified === false
+                                    ? 'bg-amber-600 hover:bg-amber-700'
+                                    : 'bg-[#3E2C1F] hover:bg-[#2D1F15]'
+                                }`}
+                              >
+                                {labelLoading === order.id ? (
+                                  <>
+                                    <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                    </svg>
+                                    {t('orders.creatingLabel')}
+                                  </>
+                                ) : t('orders.createLabel')}
+                              </button>
+                              <button
+                                onClick={() => setMarkShippedOrder(order)}
+                                className="px-3 py-1.5 border border-green-600 text-green-700 rounded-lg text-xs font-medium hover:bg-green-50 transition-colors"
+                              >
+                                Mark as Shipped
+                              </button>
+                            </>
                           )}
                           {order.status === 'shipped' && (
                             order.shippoLabelUrl ? (

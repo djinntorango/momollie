@@ -11,6 +11,8 @@ import {
   ShippoTransactionResponse,
   ShippoAddressValidation,
   ShippingRateOptions,
+  PACKAGING,
+  PACKAGING_TARE_LB,
 } from "./shippoClient.js";
 import {resendApiKey, sendShippingNotification} from "./email.js";
 
@@ -35,6 +37,9 @@ interface FirestoreOrder {
   items?: Array<{productId?: string; name?: string; quantity: number; weightLb?: number; price?: number; salePrice?: number}>;
   addressVerified?: boolean;
   addressIssues?: string[];
+  shippoRateId?: string;
+  shippoRateAmountUsd?: number;
+  shippoServiceLevel?: string;
 }
 
 interface FirestoreSettings {
@@ -145,9 +150,7 @@ export const validateAddress = onCall(
 const PRIORITY_KEYWORDS = ["priority"];
 const STANDARD_KEYWORDS = ["ground", "parcel", "first class", "media"];
 
-// Packaging dimensions (own packaging)
-const PACKAGING_DIMS = {length: "12", width: "9", height: "6", distance_unit: "in", mass_unit: "lb"};
-const PACKAGING_TARE_LB = 0.5;
+// PACKAGING and PACKAGING_TARE_LB imported from shippoClient.ts
 
 interface EstimateItem {
   productId: string;
@@ -253,13 +256,10 @@ export const getShippingEstimate = onCall(
       apiKey,
       addressFrom,
       addressTo,
-      {...PACKAGING_DIMS, weight: totalWeightLb.toFixed(2)}
+      {...PACKAGING, weight: totalWeightLb.toFixed(2)}
     );
   }
 );
-
-// PACKAGING alias for createShippingLabel
-const PACKAGING = PACKAGING_DIMS;
 
 /**
  * Returns the selected rate details (service, cost) without purchasing.
@@ -281,6 +281,18 @@ export const previewShippingLabel = onCall(
     if (!orderSnap.exists) throw new HttpsError("not-found", `Order ${orderId} not found`);
 
     const order = orderSnap.data() as FirestoreOrder;
+
+    // If the checkout locked in a rate, return it directly — no need to re-query Shippo.
+    // This ensures the preview matches exactly what createShippingLabel will charge.
+    if (order.shippoRateId && order.shippoRateAmountUsd) {
+      return {
+        serviceLevel: order.shippoServiceLevel ?? (order.shippingTier === "priority" ? "USPS Priority Mail" : "USPS Ground Advantage"),
+        carrier: "USPS",
+        amountUsd: order.shippoRateAmountUsd,
+        estimatedDays: null,
+      };
+    }
+
     const settings: FirestoreSettings = settingsSnap.exists ? (settingsSnap.data() as FirestoreSettings) : {};
     const apiKey = shippoApiKey.value();
 
@@ -423,68 +435,97 @@ export const createShippingLabel = onCall(
       weight: totalWeightLb.toFixed(2),
     };
 
-    console.log(`[createShippingLabel] orderId=${orderId} tier=${order.shippingTier ?? "standard"} weight=${totalWeightLb}lb`);
+    const shippingTier = order.shippingTier ?? "standard";
+    console.log(`[createShippingLabel] orderId=${orderId} tier=${shippingTier} weight=${totalWeightLb}lb`);
     console.log(`[createShippingLabel] addressTo=${JSON.stringify(addressTo)}`);
 
-    const shipment = await shippoPost<ShippoShipmentResponse>(apiKey, "/shipments/", {
-      address_from: addressFrom,
-      address_to: addressTo,
-      parcels: [parcel],
-      async: false,
-    });
+    let transaction: ShippoTransactionResponse | undefined;
+    let labelCostUsd = 0;
 
-    console.log(`[createShippingLabel] shipment id=${shipment.object_id} rateCount=${shipment.rates?.length ?? 0}`);
-
-    if (!shipment.rates || shipment.rates.length === 0) {
-      console.error("[createShippingLabel] No rates returned from Shippo");
-      throw new HttpsError("internal", "No shipping rates returned from Shippo");
+    // Attempt 1: purchase the exact rate locked in at checkout to avoid price drift
+    if (order.shippoRateId) {
+      try {
+        const t = await shippoPost<ShippoTransactionResponse>(apiKey, "/transactions/", {
+          rate: order.shippoRateId,
+          label_file_type: "PDF",
+          async: false,
+        });
+        if (t.object_state === "VALID" && t.label_url) {
+          transaction = t;
+          labelCostUsd = order.shippoRateAmountUsd ?? 0;
+          console.log(`[createShippingLabel] Used locked checkout rate ${order.shippoRateId}, cost=$${labelCostUsd}`);
+        } else {
+          console.log(`[createShippingLabel] Locked rate invalid (state=${t.object_state}), falling back to fresh rates`);
+        }
+      } catch (rateErr) {
+        console.log(`[createShippingLabel] Locked rate expired or failed, falling back to fresh rates: ${rateErr}`);
+      }
     }
 
-    // Select USPS rate matching the customer's chosen shipping tier
-    const shippingTier = order.shippingTier ?? "standard";
-    const uspsRates = shipment.rates.filter((r) => r.provider.toUpperCase() === "USPS");
-    console.log(`[createShippingLabel] uspsRateCount=${uspsRates.length} rates=${JSON.stringify(uspsRates.map((r) => ({id: r.object_id, service: r.servicelevel.name, amount: r.amount})))}`);
+    // Attempt 2: fresh rate lookup (runs when no stored rate or stored rate expired)
+    if (!transaction) {
+      const shipment = await shippoPost<ShippoShipmentResponse>(apiKey, "/shipments/", {
+        address_from: addressFrom,
+        address_to: addressTo,
+        parcels: [parcel],
+        async: false,
+      });
 
-    const keywords = shippingTier === "priority" ? PRIORITY_KEYWORDS : STANDARD_KEYWORDS;
-    const tierRates = uspsRates.filter((r) =>
-      keywords.some((k) => r.servicelevel.name.toLowerCase().includes(k))
-    );
+      console.log(`[createShippingLabel] shipment id=${shipment.object_id} rateCount=${shipment.rates?.length ?? 0}`);
 
-    const ratePool =
-      tierRates.length > 0 ? tierRates
-      : uspsRates.length > 0 ? uspsRates
-      : shipment.rates;
+      if (!shipment.rates || shipment.rates.length === 0) {
+        console.error("[createShippingLabel] No rates returned from Shippo");
+        throw new HttpsError("internal", "No shipping rates returned from Shippo");
+      }
 
-    const cheapestRate = ratePool.reduce((best, r) =>
-      parseFloat(r.amount) < parseFloat(best.amount) ? r : best
-    );
+      const uspsRates = shipment.rates.filter((r) => r.provider.toUpperCase() === "USPS");
+      console.log(`[createShippingLabel] uspsRateCount=${uspsRates.length} rates=${JSON.stringify(uspsRates.map((r) => ({id: r.object_id, service: r.servicelevel.name, amount: r.amount})))}`);
 
-    console.log(`[createShippingLabel] selectedRate=${cheapestRate.object_id} service="${cheapestRate.servicelevel.name}" amount=${cheapestRate.amount}`);
+      const keywords = shippingTier === "priority" ? PRIORITY_KEYWORDS : STANDARD_KEYWORDS;
+      const tierRates = uspsRates.filter((r) =>
+        keywords.some((k) => r.servicelevel.name.toLowerCase().includes(k))
+      );
 
-    const transaction = await shippoPost<ShippoTransactionResponse>(apiKey, "/transactions/", {
-      rate: cheapestRate.object_id,
-      label_file_type: "PDF",
-      async: false,
-    });
+      const ratePool =
+        tierRates.length > 0 ? tierRates
+        : uspsRates.length > 0 ? uspsRates
+        : shipment.rates;
 
-    console.log(`[createShippingLabel] transaction object_state=${transaction.object_state} label_url="${transaction.label_url}" tracking=${transaction.tracking_number} messages=${JSON.stringify(transaction.messages ?? [])}`);
+      const cheapestRate = ratePool.reduce((best, r) =>
+        parseFloat(r.amount) < parseFloat(best.amount) ? r : best
+      );
 
-    if (transaction.object_state !== "VALID" || !transaction.label_url) {
-      const msg = transaction.messages?.map((m) => m.text).join("; ") || "No label URL returned";
-      console.error(`[createShippingLabel] Label creation failed: ${msg}`);
-      throw new HttpsError("internal", `Label creation failed: ${msg}`);
+      console.log(`[createShippingLabel] selectedRate=${cheapestRate.object_id} service="${cheapestRate.servicelevel.name}" amount=${cheapestRate.amount}`);
+
+      const t = await shippoPost<ShippoTransactionResponse>(apiKey, "/transactions/", {
+        rate: cheapestRate.object_id,
+        label_file_type: "PDF",
+        async: false,
+      });
+
+      console.log(`[createShippingLabel] transaction object_state=${t.object_state} label_url="${t.label_url}" tracking=${t.tracking_number} messages=${JSON.stringify(t.messages ?? [])}`);
+
+      if (t.object_state !== "VALID" || !t.label_url) {
+        const msg = t.messages?.map((m) => m.text).join("; ") || "No label URL returned";
+        console.error(`[createShippingLabel] Label creation failed: ${msg}`);
+        throw new HttpsError("internal", `Label creation failed: ${msg}`);
+      }
+
+      transaction = t;
+      labelCostUsd = parseFloat(cheapestRate.amount);
     }
 
     console.log(`[createShippingLabel] SUCCESS — writing to Firestore orderId=${orderId}`);
 
-    const labelCostUsd = parseFloat(cheapestRate.amount);
+    // transaction is guaranteed defined here (we threw above if fresh lookup failed)
+    const tx = transaction as ShippoTransactionResponse;
 
     await db.collection("orders").doc(orderId).update({
       status: "shipped",
-      shippoLabelUrl: transaction.label_url,
-      trackingNumber: transaction.tracking_number,
+      shippoLabelUrl: tx.label_url,
+      trackingNumber: tx.tracking_number,
       trackingCarrier: "USPS",
-      trackingUrl: transaction.tracking_url_provider,
+      trackingUrl: tx.tracking_url_provider,
       labelCostUsd,
       shippedAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -503,8 +544,8 @@ export const createShippingLabel = onCall(
             price: item.price ?? 0,
             salePrice: item.salePrice,
           })),
-          trackingNumber: transaction.tracking_number,
-          trackingUrl: transaction.tracking_url_provider,
+          trackingNumber: tx.tracking_number,
+          trackingUrl: tx.tracking_url_provider,
           shippingTier: order.shippingTier ?? "standard",
         });
       } catch (emailErr) {
@@ -513,10 +554,86 @@ export const createShippingLabel = onCall(
     }
 
     return {
-      labelUrl: transaction.label_url,
-      trackingNumber: transaction.tracking_number,
-      trackingUrl: transaction.tracking_url_provider,
+      labelUrl: tx.label_url,
+      trackingNumber: tx.tracking_number,
+      trackingUrl: tx.tracking_url_provider,
       rateCost: labelCostUsd,
     };
+  }
+);
+
+// ---------------------------------------------------------------------------
+// markOrderShipped — admin-only, for orders shipped outside the label flow.
+// Updates the order and sends the customer a shipping notification.
+// ---------------------------------------------------------------------------
+
+interface MarkOrderShippedRequest {
+  orderId: string;
+  trackingNumber?: string;
+  trackingCarrier?: string;
+  trackingUrl?: string;
+}
+
+export const markOrderShipped = onCall(
+  {secrets: [resendApiKey], cors: ALLOWED_ORIGINS},
+  async (request) => {
+    if (!isAdmin(request.auth?.uid)) {
+      throw new HttpsError("permission-denied", "Admin access required");
+    }
+
+    const data = request.data as MarkOrderShippedRequest;
+    if (!data.orderId) {
+      throw new HttpsError("invalid-argument", "orderId is required");
+    }
+
+    const db = admin.firestore();
+    const orderRef = db.collection("orders").doc(data.orderId);
+    const orderSnap = await orderRef.get();
+    if (!orderSnap.exists) {
+      throw new HttpsError("not-found", `Order ${data.orderId} not found`);
+    }
+    const order = orderSnap.data() as FirestoreOrder;
+
+    const trackingNumber = data.trackingNumber?.trim() || undefined;
+    const trackingCarrier = data.trackingCarrier?.trim() || "USPS";
+    const trackingUrl = data.trackingUrl?.trim() || undefined;
+
+    await orderRef.update({
+      status: "shipped",
+      shippedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      ...(trackingNumber ? {
+        trackingNumber,
+        trackingCarrier,
+        ...(trackingUrl ? {trackingUrl} : {}),
+      } : {}),
+    });
+
+    // Best-effort — the order is already marked shipped; report email status to the caller.
+    let emailSent = false;
+    if (order.customer?.email) {
+      try {
+        await sendShippingNotification(resendApiKey.value(), {
+          orderId: data.orderId,
+          customerName: order.customer.name,
+          customerEmail: order.customer.email,
+          items: (order.items ?? []).map((item) => ({
+            name: item.name ?? "",
+            quantity: item.quantity,
+            price: item.price ?? 0,
+            salePrice: item.salePrice,
+          })),
+          trackingNumber,
+          trackingUrl,
+          trackingCarrier,
+          shippingTier: order.shippingTier ?? "standard",
+        });
+        emailSent = true;
+      } catch (emailErr) {
+        console.error(`[markOrderShipped] Failed to send shipping notification for order ${data.orderId}:`, emailErr);
+      }
+    }
+
+    return {emailSent};
   }
 );

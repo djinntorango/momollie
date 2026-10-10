@@ -4,6 +4,7 @@ import {defineSecret} from "firebase-functions/params";
 export const resendApiKey = defineSecret("RESEND_API_KEY");
 
 const FROM = "Dear Momollie <orders@dearmomollie.com>";
+const ADMIN_ALERT_EMAIL = "momollie823@gmail.com";
 const BRAND_BROWN = "#3E2C1F";
 const BRAND_GOLD = "#E8B55F";
 const BRAND_CREAM = "#FAF8F4";
@@ -42,14 +43,26 @@ export interface ShippingNotificationData {
   customerName: string;
   customerEmail: string;
   items: OrderEmailItem[];
-  trackingNumber: string;
+  trackingNumber?: string;
   trackingUrl?: string;
+  trackingCarrier?: string;
   shippingTier: "standard" | "priority";
 }
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+type SendPayload = Parameters<Resend["emails"]["send"]>[0];
+
+// The Resend SDK resolves with {data, error} instead of throwing, so failures
+// are silent unless we check. Throw so callers' try/catch actually logs them.
+async function send(apiKey: string, payload: SendPayload): Promise<void> {
+  const {error} = await new Resend(apiKey).emails.send(payload);
+  if (error) {
+    throw new Error(`Resend ${error.name}: ${error.message}`);
+  }
+}
 
 function fmt(dollars: number) {
   return `$${dollars.toFixed(2)}`;
@@ -117,7 +130,6 @@ export async function sendOrderConfirmation(
   apiKey: string,
   data: OrderConfirmationData
 ): Promise<void> {
-  const resend = new Resend(apiKey);
   const shippingCost = Math.max(0, data.total - data.subtotal);
   const deliveryRange =
     data.shippingTier === "priority" ? "1–3 business days" : "3–7 business days";
@@ -185,7 +197,7 @@ export async function sendOrderConfirmation(
     </table>
   `;
 
-  await resend.emails.send({
+  await send(apiKey, {
     from: FROM,
     to: data.customerEmail,
     subject: `Order confirmed — #${shortId}`,
@@ -208,7 +220,6 @@ export async function sendContactNotification(
   apiKey: string,
   data: ContactNotificationData
 ): Promise<void> {
-  const resend = new Resend(apiKey);
 
   const body = `
     <h1 style="margin:0 0 4px;font-size:22px;color:${BRAND_BROWN};">New message from your site</h1>
@@ -232,7 +243,7 @@ ${data.message}
     </div>
   `;
 
-  await resend.emails.send({
+  await send(apiKey, {
     from: `Momollie Contact <site@dearmomollie.com>`,
     to: "hello@dearmomollie.com",
     replyTo: `${data.customerName} <${data.customerEmail}>`,
@@ -257,7 +268,6 @@ export async function sendOrderNoteEmail(
   apiKey: string,
   data: OrderNoteData
 ): Promise<void> {
-  const resend = new Resend(apiKey);
   const shortId = data.orderId.slice(0, 8).toUpperCase();
 
   const body = `
@@ -273,7 +283,7 @@ ${data.message}
     </p>
   `;
 
-  await resend.emails.send({
+  await send(apiKey, {
     from: `Dear Momollie <hello@dearmomollie.com>`,
     to: data.customerEmail,
     replyTo: "Dear Momollie <hello@dearmomollie.com>",
@@ -290,7 +300,6 @@ export async function sendShippingNotification(
   apiKey: string,
   data: ShippingNotificationData
 ): Promise<void> {
-  const resend = new Resend(apiKey);
   const shortId = data.orderId.slice(0, 8).toUpperCase();
   const deliveryRange =
     data.shippingTier === "priority" ? "1–3 business days" : "3–7 business days";
@@ -299,14 +308,19 @@ export async function sendShippingNotification(
     ? `<a href="${data.trackingUrl}" style="display:inline-block;margin-top:16px;padding:12px 28px;background-color:${BRAND_GOLD};color:#fff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:bold;">Track Your Package</a>`
     : "";
 
+  const carrier = data.trackingCarrier ?? "USPS";
+  const trackingDetails = data.trackingNumber
+    ? `<p style="margin:0 0 4px;font-size:12px;color:#9B8778;text-transform:uppercase;letter-spacing:1px;">${carrier} Tracking Number</p>
+      <p style="margin:0;font-size:22px;font-weight:bold;color:${BRAND_BROWN};letter-spacing:2px;font-family:monospace;">${data.trackingNumber}</p>`
+    : `<p style="margin:0;font-size:15px;font-weight:bold;color:${BRAND_BROWN};">Shipped via ${carrier}</p>`;
+
   const body = `
     <h1 style="margin:0 0 4px;font-size:24px;color:${BRAND_BROWN};">Your order is on its way!</h1>
     <p style="margin:0 0 24px;font-size:15px;color:#6B5744;">Hi ${data.customerName} — your Momollie order has shipped.</p>
 
     <!-- Tracking box -->
     <div style="background:#fff;border:1px solid #EDE8E1;border-radius:6px;padding:20px 24px;margin-bottom:28px;text-align:center;">
-      <p style="margin:0 0 4px;font-size:12px;color:#9B8778;text-transform:uppercase;letter-spacing:1px;">USPS Tracking Number</p>
-      <p style="margin:0;font-size:22px;font-weight:bold;color:${BRAND_BROWN};letter-spacing:2px;font-family:monospace;">${data.trackingNumber}</p>
+      ${trackingDetails}
       <p style="margin:8px 0 0;font-size:13px;color:#9B8778;">Estimated delivery: ${deliveryRange}</p>
       ${trackingButton}
     </div>
@@ -329,10 +343,86 @@ export async function sendShippingNotification(
     <p style="margin:0;font-size:13px;color:#9B8778;">Order <strong style="color:${BRAND_BROWN};">#${shortId}</strong> · Questions? Just reply to this email.</p>
   `;
 
-  await resend.emails.send({
+  await send(apiKey, {
     from: FROM,
     to: data.customerEmail,
-    subject: `Your Momollie order has shipped — tracking #${data.trackingNumber}`,
+    subject: data.trackingNumber
+      ? `Your Momollie order has shipped — tracking #${data.trackingNumber}`
+      : `Your Momollie order #${shortId} has shipped`,
     html: emailShell("Your Order Has Shipped", body),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// New order alert (internal — to ADMIN_ALERT_EMAIL)
+// ---------------------------------------------------------------------------
+
+export interface NewOrderAlertData {
+  orderId: string;
+  customerName: string;
+  customerEmail: string;
+  items: OrderEmailItem[];
+  total: number;
+  address: {
+    line1: string;
+    line2?: string;
+    city: string;
+    state: string;
+    zip: string;
+    country: string;
+  };
+}
+
+export async function sendNewOrderAlert(
+  apiKey: string,
+  data: NewOrderAlertData
+): Promise<void> {
+  const shortId = data.orderId.slice(0, 8).toUpperCase();
+  const addrLine2 = data.address.line2 ? `<br>${data.address.line2}` : "";
+
+  const body = `
+    <h1 style="margin:0 0 4px;font-size:24px;color:${BRAND_BROWN};">New Order!</h1>
+    <p style="margin:0 0 24px;font-size:15px;color:#6B5744;">A new order just came in — head to the admin portal to fulfill it.</p>
+
+    <div style="background:#fff;border:1px solid #EDE8E1;border-radius:6px;padding:16px 20px;margin-bottom:20px;">
+      <p style="margin:0;font-size:12px;color:#9B8778;text-transform:uppercase;letter-spacing:1px;">Order number</p>
+      <p style="margin:4px 0 0;font-size:20px;font-weight:bold;color:${BRAND_BROWN};letter-spacing:2px;">#${shortId}</p>
+    </div>
+
+    <div style="background:#fff;border:1px solid #EDE8E1;border-radius:6px;padding:16px 20px;margin-bottom:20px;">
+      <p style="margin:0 0 6px;font-size:12px;color:#9B8778;text-transform:uppercase;letter-spacing:1px;">Customer</p>
+      <p style="margin:0;font-size:14px;color:#2D1F14;">${data.customerName}</p>
+      <p style="margin:2px 0 0;font-size:14px;color:#6B5744;">${data.customerEmail}</p>
+      <p style="margin:12px 0 6px;font-size:12px;color:#9B8778;text-transform:uppercase;letter-spacing:1px;">Ships to</p>
+      <p style="margin:0;font-size:14px;color:#2D1F14;line-height:1.6;">
+        ${data.address.line1}${addrLine2}<br>
+        ${data.address.city}, ${data.address.state} ${data.address.zip}
+      </p>
+    </div>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+      <thead>
+        <tr>
+          <th style="padding:8px 0;border-bottom:2px solid ${BRAND_BROWN};font-size:12px;color:#9B8778;text-align:left;text-transform:uppercase;letter-spacing:1px;">Item</th>
+          <th style="padding:8px 0;border-bottom:2px solid ${BRAND_BROWN};font-size:12px;color:#9B8778;text-align:center;text-transform:uppercase;letter-spacing:1px;">Qty</th>
+          <th style="padding:8px 0;border-bottom:2px solid ${BRAND_BROWN};font-size:12px;color:#9B8778;text-align:right;text-transform:uppercase;letter-spacing:1px;">Price</th>
+        </tr>
+      </thead>
+      <tbody>${itemRows(data.items)}</tbody>
+    </table>
+
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="padding:10px 0 0;font-size:16px;font-weight:bold;color:${BRAND_BROWN};border-top:1px solid #EDE8E1;">Total</td>
+        <td style="padding:10px 0 0;font-size:16px;font-weight:bold;color:${BRAND_BROWN};text-align:right;border-top:1px solid #EDE8E1;">${fmt(data.total)}</td>
+      </tr>
+    </table>
+  `;
+
+  await send(apiKey, {
+    from: FROM,
+    to: ADMIN_ALERT_EMAIL,
+    subject: `New order #${shortId} — ${fmt(data.total)} from ${data.customerName}`,
+    html: emailShell("New Order", body),
   });
 }
