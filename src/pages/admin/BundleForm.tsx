@@ -94,7 +94,7 @@ export default function BundleForm({ initial, onSubmit, submitLabel }: BundleFor
   const fileRefs = useRef<(HTMLInputElement | null)[]>([])
 
   useEffect(() => {
-    getProducts()
+    getProducts({ includeInactive: true })
       .then((all) => setFlatProducts(all.filter((p) => p.listingType !== 'bundle')))
       .finally(() => setLoadingProducts(false))
   }, [])

@@ -12,6 +12,7 @@ export const translations: Record<string, Entry> = {
   'sidebar.accounting':        { en: 'Accounting',          zh: '财务' },
   'sidebar.testimonials':      { en: 'Testimonials',        zh: '顾客评价' },
   'sidebar.promotions':        { en: 'Pop-up Promotions',   zh: '弹窗推广' },
+  'sidebar.promoCodes':        { en: 'Promo Codes',         zh: '优惠码' },
 
   // ── Login ─────────────────────────────────────────────────────────────────
   'login.title':               { en: 'Momollie Admin',                   zh: 'Momollie 管理后台' },
@@ -53,6 +54,7 @@ export const translations: Record<string, Entry> = {
   'form.category':             { en: 'Category *',                                                 zh: '类别 *' },
   'form.inStock':              { en: 'In Stock',                                                   zh: '有货' },
   'form.bestSeller':           { en: 'Best Seller',                                                zh: '热销商品' },
+  'form.freeShipping':         { en: 'Free Shipping',                                              zh: '包邮' },
   'form.stockQty':             { en: 'Stock Quantity',                                             zh: '库存数量' },
   'form.stockQtyHint':         { en: 'optional — leave blank to disable tracking',                 zh: '可选 — 留空则不追踪库存' },
   'form.price':                { en: 'Price ($) *',                                                zh: '价格（美元）*' },

@@ -14,6 +14,7 @@ export interface CartItem {
   price: number
   salePrice: number | null
   quantity: number
+  shippingIncluded: boolean
   selections?: CartItemSelection[]
 }
 

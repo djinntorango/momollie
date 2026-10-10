@@ -42,10 +42,13 @@ function fromDoc(id: string, data: Record<string, unknown>): Product {
   return p as Product
 }
 
-export async function getProducts(): Promise<Product[]> {
+export async function getProducts(options?: { includeInactive?: boolean }): Promise<Product[]> {
   const q = query(collection(db(), COLLECTION), orderBy('createdAt', 'desc'));
   const snapshot = await getDocs(q);
-  const products = snapshot.docs.map((d) => fromDoc(d.id, d.data() as Record<string, unknown>));
+  let products = snapshot.docs.map((d) => fromDoc(d.id, d.data() as Record<string, unknown>));
+  if (!options?.includeInactive) {
+    products = products.filter((p) => p.active !== false);
+  }
   return products.sort((a, b) => {
     const aHas = a.sortOrder !== undefined;
     const bHas = b.sortOrder !== undefined;

@@ -26,6 +26,7 @@ import AdminPromotions from './pages/admin/Promotions'
 import AdminOrders from './pages/admin/Orders'
 import AdminAccounting from './pages/admin/Accounting'
 import AdminTestimonials from './pages/admin/Testimonials'
+import AdminPromoCodes from './pages/admin/PromoCodes'
 import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import { LangProvider } from './context/LangContext'
@@ -84,6 +85,7 @@ export default function App() {
               <Route path="promotions" element={<AdminPromotions />} />
               <Route path="accounting" element={<AdminAccounting />} />
               <Route path="testimonials" element={<AdminTestimonials />} />
+              <Route path="promo-codes" element={<AdminPromoCodes />} />
             </Route>
           </Route>
         </Routes>

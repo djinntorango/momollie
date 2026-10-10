@@ -43,6 +43,7 @@ export default function EditProduct() {
       careInstructions: data.careInstructions.filter(Boolean),
       inStock: data.inStock,
       bestSeller: data.bestSeller || undefined,
+      freeShipping: data.freeShipping || undefined,
       stockQty: data.stockQty !== '' ? parseInt(data.stockQty) : undefined,
       etsyUrl: data.etsyUrl || undefined,
       image: validImages[0]?.url ?? '',

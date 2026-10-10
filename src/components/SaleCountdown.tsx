@@ -23,7 +23,9 @@ interface SaleCountdownProps {
 export default function SaleCountdown({ endsAt, className = '', onExpire }: SaleCountdownProps) {
   const [msLeft, setMsLeft] = useState(() => endsAt.getTime() - Date.now())
   const onExpireRef = useRef(onExpire)
-  onExpireRef.current = onExpire
+  useEffect(() => {
+    onExpireRef.current = onExpire
+  }, [onExpire])
 
   useEffect(() => {
     const idRef = { current: undefined as ReturnType<typeof setInterval> | undefined }

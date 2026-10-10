@@ -19,6 +19,7 @@ export interface ProductFormData {
   careInstructions: string[]
   inStock: boolean
   bestSeller: boolean
+  freeShipping: boolean
   stockQty: string          // '' = no tracking; '0' = out of stock
   etsyUrl: string
   images: ProductImage[]
@@ -62,6 +63,7 @@ function toFormData(p?: Product): ProductFormData {
     careInstructions: p?.careInstructions?.length ? p.careInstructions : [''],
     inStock: p?.inStock ?? true,
     bestSeller: p?.bestSeller ?? false,
+    freeShipping: p?.freeShipping ?? false,
     stockQty: p?.stockQty !== undefined ? String(p.stockQty) : '',
     etsyUrl: p?.etsyUrl ?? '',
     images,
@@ -270,6 +272,10 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
           <label className="flex items-center gap-3 cursor-pointer">
             <input type="checkbox" checked={form.bestSeller} onChange={(e) => set('bestSeller', e.target.checked)} className="w-5 h-5 accent-[#E8B55F]" />
             <span className="text-sm font-medium text-gray-700">{t('form.bestSeller')}</span>
+          </label>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" checked={form.freeShipping} onChange={(e) => set('freeShipping', e.target.checked)} className="w-5 h-5 accent-[#E8B55F]" />
+            <span className="text-sm font-medium text-gray-700">{t('form.freeShipping')}</span>
           </label>
         </div>
       </div>

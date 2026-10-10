@@ -43,12 +43,17 @@ export interface ShippoTransactionResponse {
 export interface ShippingTierRate {
   amountCents: number;
   serviceLevel: string;
+  rateId?: string; // Shippo rate object_id — present only for live rates, not fallbacks
 }
 
 export interface ShippingRateOptions {
   standard: ShippingTierRate;
   priority: ShippingTierRate;
 }
+
+// Single source of truth for packaging — poly mailer used for all shipments
+export const PACKAGING = {length: "14", width: "10", height: "2", distance_unit: "in", mass_unit: "lb"};
+export const PACKAGING_TARE_LB = 0.1;
 
 export async function shippoPost<T>(
   apiKey: string,
@@ -115,12 +120,14 @@ export async function getShippingRateOptions(
       ? {
           amountCents: Math.round(parseFloat(standardRate.amount) * 100),
           serviceLevel: standardRate.servicelevel.name,
+          rateId: standardRate.object_id,
         }
       : fallbackStandard(weightLb),
     priority: priorityRate
       ? {
           amountCents: Math.round(parseFloat(priorityRate.amount) * 100),
           serviceLevel: priorityRate.servicelevel.name,
+          rateId: priorityRate.object_id,
         }
       : fallbackPriority(weightLb),
   };

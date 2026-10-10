@@ -23,6 +23,7 @@ export default function AdminProducts() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [savingStockId, setSavingStockId] = useState<string | null>(null)
   const [stockDraft, setStockDraft] = useState<Record<string, string>>({})
+  const [togglingId, setTogglingId] = useState<string | null>(null)
 
   // Drag-to-reorder state
   const [isDirty, setIsDirty] = useState(false)
@@ -31,7 +32,7 @@ export default function AdminProducts() {
   const [overIdx, setOverIdx] = useState<number | null>(null)
 
   useEffect(() => {
-    getProducts()
+    getProducts({ includeInactive: true })
       .then(setProducts)
       .finally(() => setFetching(false))
   }, [])
@@ -65,6 +66,21 @@ export default function AdminProducts() {
       alert('Failed to save order. Please try again.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleToggleActive = async (product: Product) => {
+    setTogglingId(product.id)
+    const nextActive = product.active === false ? true : false
+    try {
+      await updateProduct(product.id, { active: nextActive })
+      setProducts((prev) =>
+        prev.map((p) => p.id === product.id ? { ...p, active: nextActive } : p)
+      )
+    } catch {
+      alert('Failed to update listing visibility. Please try again.')
+    } finally {
+      setTogglingId(null)
     }
   }
 
@@ -194,7 +210,7 @@ export default function AdminProducts() {
                   onDragOver={(e) => handleDragOver(e, idx)}
                   onDrop={() => handleDrop(idx)}
                   onDragEnd={handleDragEnd}
-                  className={`transition-colors ${overIdx === idx ? 'bg-amber-50 border-t-2 border-[#E8B55F]' : 'hover:bg-gray-50'}`}
+                  className={`transition-colors ${overIdx === idx ? 'bg-amber-50 border-t-2 border-[#E8B55F]' : product.active === false ? 'bg-gray-50 opacity-60' : 'hover:bg-gray-50'}`}
                 >
                   <td className="pl-3 pr-1 py-4 cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 select-none">
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -212,12 +228,19 @@ export default function AdminProducts() {
                       </div>
                       <div>
                         <span className="font-medium text-gray-800 line-clamp-2">{product.name}</span>
-                        {product.listingType === 'bundle' && (
-                          <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-                            Bundle · {product.slots?.length ?? 0} slot{(product.slots?.length ?? 0) !== 1 ? 's' : ''}
-                          </span>
-                        )}
+                        <div className="flex flex-wrap gap-1 mt-0.5">
+                          {product.active === false && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-500">
+                              Inactive
+                            </span>
+                          )}
+                          {product.listingType === 'bundle' && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                              Bundle · {product.slots?.length ?? 0} slot{(product.slots?.length ?? 0) !== 1 ? 's' : ''}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </td>
@@ -266,6 +289,16 @@ export default function AdminProducts() {
                   </td>
                   <td className="px-4 py-4 text-right">
                     <div className="flex items-center justify-end gap-3">
+                      <button
+                        onClick={() => handleToggleActive(product)}
+                        disabled={togglingId === product.id}
+                        className="text-gray-400 hover:text-gray-700 font-medium transition-colors disabled:opacity-50 text-sm"
+                        title={product.active === false ? 'Make visible on site' : 'Hide from site'}
+                      >
+                        {togglingId === product.id
+                          ? '…'
+                          : product.active === false ? 'Activate' : 'Deactivate'}
+                      </button>
                       <Link
                         to={product.listingType === 'bundle'
                           ? `/admin/listings/${product.id}/edit-bundle`

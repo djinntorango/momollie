@@ -20,12 +20,14 @@ export interface Product {
   description: string;
   features: string[];
   bestSeller?: boolean;
+  freeShipping?: boolean;
   listingType?: 'bundle'; // absent or undefined = flat listing
   slots?: BundleSlot[];   // only for bundle listings
   image: string;           // primary image URL — kept for cart/backward compat
   images?: ProductImage[]; // full gallery with alt text
   videoUrl?: string;       // optional YouTube or direct video URL
   etsyUrl?: string;
+  active?: boolean;          // undefined or true = visible; false = hidden from customer site
   inStock: boolean;
   stockQty?: number;        // undefined = no quantity tracking; 0 = out of stock
   materials: string[];
@@ -47,6 +49,19 @@ export interface Promotion {
   buttonLink: string;
   active: boolean;
   createdAt?: Date;
+}
+
+export interface PromoCode {
+  id: string;
+  code: string;
+  type: 'percentage' | 'fixed';
+  value: number;
+  active: boolean;
+  minOrderSubtotal: number;
+  maxUses: number | null;
+  usageCount: number;
+  expiresAt: Date | null;
+  createdAt: Date;
 }
 
 export interface Order {
@@ -85,6 +100,8 @@ export interface Order {
   trackingNumber?: string;
   trackingCarrier?: string;
   trackingUrl?: string;
+  promoCode?: string;
+  discountAmount?: number;
   refundId?: string;
   refundAmount?: number;
   refundedAt?: Date;

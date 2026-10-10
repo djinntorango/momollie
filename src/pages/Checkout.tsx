@@ -12,6 +12,14 @@ import { httpsCallable } from 'firebase/functions'
 import { functions } from '@/lib/firebase'
 import { useCart } from '@/context/CartContext'
 import { saveMarketingConsent } from '@/lib/marketingService'
+import {
+  trackBeginCheckout,
+  trackAddShippingInfo,
+  trackAddPaymentInfo,
+  trackPurchase,
+  trackCheckoutError,
+  type GaItem,
+} from '@/lib/analytics'
 
 // Loaded lazily inside the component so Stripe.js isn't injected on every page
 let stripePromise: ReturnType<typeof loadStripe> | null = null
@@ -101,10 +109,12 @@ function StepIndicator({ step }: { step: 1 | 2 | 3 }) {
 interface CheckoutFormProps {
   paymentIntentId: string
   subtotalCents: number
+  allShippingIncluded: boolean
   cartItems: Array<{ productId: string; quantity: number; selections?: { productId: string }[] }>
+  gaItems: GaItem[]
 }
 
-function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFormProps) {
+function CheckoutForm({ paymentIntentId, subtotalCents, allShippingIncluded, cartItems, gaItems }: CheckoutFormProps) {
   const stripe = useStripe()
   const elements = useElements()
   const navigate = useNavigate()
@@ -125,11 +135,19 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
   const [estimateError, setEstimateError] = useState<string | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Promo code (Step 2)
+  const [promoInput, setPromoInput] = useState('')
+  const [promoCode, setPromoCode] = useState<string | null>(null)
+  const [promoDescription, setPromoDescription] = useState<string | null>(null)
+  const [promoChecking, setPromoChecking] = useState(false)
+  const [promoError, setPromoError] = useState<string | null>(null)
+
   // Step 2 → 3 finalization
   const [finalizing, setFinalizing] = useState(false)
   const [finalizeError, setFinalizeError] = useState<string | null>(null)
   const [finalizedTotalCents, setFinalizedTotalCents] = useState<number | null>(null)
   const [finalizedShippingCents, setFinalizedShippingCents] = useState<number | null>(null)
+  const [finalizedDiscountCents, setFinalizedDiscountCents] = useState<number | null>(null)
   const [taxCents, setTaxCents] = useState<number | null>(null)
   const [taxError, setTaxError] = useState<string | null>(null)
 
@@ -160,7 +178,9 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
           setShippingTier((prev) => prev ?? 'standard')
         } catch {
           setEstimate(null)
-          setEstimateError("We couldn't find shipping rates for this ZIP code. Please check your address and try again.")
+          const msg = "We couldn't find shipping rates for this ZIP code. Please check your address and try again."
+          setEstimateError(msg)
+          trackCheckoutError('shipping_estimate', msg)
         } finally {
           setEstimateLoading(false)
         }
@@ -173,6 +193,10 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
     (event: { complete: boolean; value: AddressValue }) => {
       setAddressComplete(event.complete)
       setAddress(event.value)
+      if (allShippingIncluded) {
+        if (event.complete) setShippingTier('standard')
+        return
+      }
       if (event.complete) {
         fetchEstimate(event.value.address.postal_code)
       } else if (event.value.address.postal_code !== address?.address.postal_code) {
@@ -181,7 +205,7 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
         setEstimateError(null)
       }
     },
-    [address?.address.postal_code, fetchEstimate]
+    [allShippingIncluded, address?.address.postal_code, fetchEstimate]
   )
 
   const selectedRate =
@@ -195,8 +219,34 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
   const displayTotalCents = finalizedTotalCents ?? estimatedTotalCents
   const fmt = (cents: number) => `$${(cents / 100).toFixed(2)}`
 
+  const handleApplyPromo = async () => {
+    const code = promoInput.trim().toUpperCase()
+    if (!code) return
+    setPromoChecking(true)
+    setPromoError(null)
+    setPromoCode(null)
+    setPromoDescription(null)
+    try {
+      const fn = httpsCallable<
+        { code: string; subtotalCents: number },
+        { valid: boolean; discountCents?: number; description?: string; reason?: string }
+      >(functions(), 'validatePromoCode')
+      const result = await fn({ code, subtotalCents })
+      if (result.data.valid) {
+        setPromoCode(code)
+        setPromoDescription(result.data.description ?? code)
+      } else {
+        setPromoError(result.data.reason ?? 'Invalid promo code')
+      }
+    } catch (err) {
+      setPromoError(err instanceof Error ? err.message : 'Could not validate promo code')
+    } finally {
+      setPromoChecking(false)
+    }
+  }
+
   const handleContinueToPayment = async () => {
-    if (!address || !shippingTier || !estimate) return
+    if (!address || !shippingTier || (!allShippingIncluded && !estimate)) return
     setFinalizing(true)
     setFinalizeError(null)
     try {
@@ -207,8 +257,9 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
           destinationZip: string
           shippingAddress: { name: string; line1: string; line2?: string; city: string; state: string; zip: string; country: string }
           email: string
+          promoCode?: string
         },
-        { totalCents: number; shippingCostCents: number; taxCents: number; taxError: string | null }
+        { totalCents: number; shippingCostCents: number; taxCents: number; taxError: string | null; discountCents: number }
       >(functions(), 'finalizePaymentIntent')
       const result = await finalizeFn({
         paymentIntentId,
@@ -224,14 +275,19 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
           country: address.address.country,
         },
         email,
+        ...(promoCode ? { promoCode } : {}),
       })
       setFinalizedTotalCents(result.data.totalCents)
       setFinalizedShippingCents(result.data.shippingCostCents)
+      setFinalizedDiscountCents(result.data.discountCents > 0 ? result.data.discountCents : null)
       setTaxCents(result.data.taxCents)
       setTaxError(result.data.taxError ?? null)
+      trackAddShippingInfo(result.data.totalCents, shippingTier, gaItems)
       setStep(3)
     } catch (err) {
-      setFinalizeError(err instanceof Error ? err.message : 'Unable to calculate totals. Please try again.')
+      const msg = err instanceof Error ? err.message : 'Unable to calculate totals. Please try again.'
+      setFinalizeError(msg)
+      trackCheckoutError('shipping_finalize', msg)
     } finally {
       setFinalizing(false)
     }
@@ -243,6 +299,7 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
 
     setSubmitting(true)
     setPaymentError(null)
+    trackAddPaymentInfo(finalizedTotalCents, gaItems)
 
     try {
       const { error, paymentIntent } = await stripe.confirmPayment({
@@ -255,12 +312,21 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
       })
 
       if (error) {
-        setPaymentError(error.message ?? 'Payment failed. Please try again.')
+        const msg = error.message ?? 'Payment failed. Please try again.'
+        setPaymentError(msg)
+        trackCheckoutError('payment', msg)
         setSubmitting(false)
         return
       }
 
       if (paymentIntent?.status === 'succeeded') {
+        trackPurchase({
+          transactionId: paymentIntent.id,
+          valueCents: finalizedTotalCents,
+          shippingCents: finalizedShippingCents ?? 0,
+          taxCents: taxCents ?? 0,
+          items: gaItems,
+        })
         // Confirm order server-side (verifies with Stripe, marks as paid)
         const completeFn = httpsCallable<{ paymentIntentId: string }, { orderId: string }>(
           functions(), 'completeOrder'
@@ -272,6 +338,7 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Something went wrong. Please try again.'
       setPaymentError(msg)
+      trackCheckoutError('payment', msg)
       setSubmitting(false)
     }
   }
@@ -352,14 +419,24 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
           onChange={handleAddressChange}
         />
 
-        {estimateError && !estimateLoading && (
+        {!allShippingIncluded && estimateError && !estimateLoading && (
           <p className="mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
             {estimateError}
           </p>
         )}
 
+        {/* Free shipping badge */}
+        {allShippingIncluded && (
+          <div className="mt-4 flex items-center gap-2 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-3">
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            Shipping included — no additional charge
+          </div>
+        )}
+
         {/* Shipping method — appears once ZIP is known */}
-        {(estimateLoading || estimate) && (
+        {!allShippingIncluded && (estimateLoading || estimate) && (
           <div className="mt-5">
             <h3 className="text-base font-semibold text-[#3E2C1F] mb-3">Shipping method</h3>
             {estimateLoading ? (
@@ -410,6 +487,48 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
           </div>
         )}
 
+        {/* Promo code */}
+        {(estimate || allShippingIncluded) && (
+          <div className="mt-5">
+            <h3 className="text-base font-semibold text-[#3E2C1F] mb-2">Promo code</h3>
+            {promoCode ? (
+              <div className="flex items-center justify-between px-4 py-3 bg-green-50 border border-green-200 rounded-lg">
+                <div>
+                  <span className="text-sm font-mono font-semibold text-green-700">{promoCode}</span>
+                  {promoDescription && <span className="ml-2 text-sm text-green-600">— {promoDescription}</span>}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setPromoCode(null); setPromoDescription(null); setPromoInput('') }}
+                  className="text-xs text-green-700 hover:underline ml-4 flex-shrink-0"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Enter code"
+                  value={promoInput}
+                  onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoError(null) }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleApplyPromo() } }}
+                  className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#E8B55F]"
+                />
+                <button
+                  type="button"
+                  onClick={handleApplyPromo}
+                  disabled={!promoInput.trim() || promoChecking}
+                  className="px-4 py-2 bg-[#3E2C1F] text-white rounded-lg text-sm font-medium hover:bg-[#2D1F15] transition-colors disabled:opacity-40"
+                >
+                  {promoChecking ? '…' : 'Apply'}
+                </button>
+              </div>
+            )}
+            {promoError && <p className="mt-2 text-sm text-red-600">{promoError}</p>}
+          </div>
+        )}
+
         {finalizeError && (
           <p className="mt-4 text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-4 py-3">
             {finalizeError}
@@ -419,7 +538,7 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
         <button
           type="button"
           onClick={handleContinueToPayment}
-          disabled={!addressComplete || !shippingTier || !estimate || finalizing}
+          disabled={!addressComplete || !shippingTier || (!allShippingIncluded && !estimate) || finalizing}
           className="mt-5 w-full py-3 bg-[#3E2C1F] text-white rounded-full font-medium hover:bg-[#2D1F15] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {finalizing ? (
@@ -490,6 +609,12 @@ function CheckoutForm({ paymentIntentId, subtotalCents, cartItems }: CheckoutFor
             <span>Subtotal</span>
             <span>{fmt(subtotalCents)}</span>
           </div>
+          {finalizedDiscountCents != null && (
+            <div className="flex justify-between text-sm text-green-600">
+              <span>Discount {promoCode ? `(${promoCode})` : ''}</span>
+              <span>−{fmt(finalizedDiscountCents)}</span>
+            </div>
+          )}
           {finalizedShippingCents != null && (
             <div className="flex justify-between text-sm text-[#6B5B4F]">
               <span>Shipping</span>
@@ -582,6 +707,13 @@ export default function Checkout() {
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null)
   const [initError, setInitError] = useState<string | null>(null)
 
+  const gaItems: GaItem[] = items.map((i) => ({
+    item_id: i.productId,
+    item_name: i.name,
+    price: i.salePrice ?? i.price,
+    quantity: i.quantity,
+  }))
+
   useEffect(() => {
     if (items.length === 0) {
       navigate('/products')
@@ -603,9 +735,12 @@ export default function Checkout() {
       .then((result) => {
         setClientSecret(result.data.clientSecret)
         setPaymentIntentId(result.data.paymentIntentId)
+        trackBeginCheckout(result.data.subtotalCents, gaItems)
       })
       .catch((err) => {
-        setInitError(err?.message ?? 'Unable to initialize checkout. Please try again.')
+        const msg = err?.message ?? 'Unable to initialize checkout. Please try again.'
+        setInitError(msg)
+        trackCheckoutError('init', msg)
       })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -682,7 +817,9 @@ export default function Checkout() {
                 <span className="text-[#6B5B4F]">Subtotal</span>
                 <span className="font-semibold text-[#3E2C1F]">${subtotal.toFixed(2)}</span>
               </div>
-              <p className="text-xs text-[#9B8B7E] mt-2">Shipping calculated from your address</p>
+              <p className="text-xs text-[#9B8B7E] mt-2">
+                {items.every(i => i.shippingIncluded) ? 'Free shipping included' : 'Shipping calculated from your address'}
+              </p>
             </div>
           </div>
 
@@ -719,11 +856,13 @@ export default function Checkout() {
                   <CheckoutForm
                     paymentIntentId={paymentIntentId}
                     subtotalCents={Math.round(subtotal * 100)}
+                    allShippingIncluded={items.every(i => i.shippingIncluded)}
                     cartItems={items.map((i) => ({
                       productId: i.productId,
                       quantity: i.quantity,
                       ...(i.selections ? { selections: i.selections.map((s) => ({ productId: s.productId })) } : {}),
                     }))}
+                    gaItems={gaItems}
                   />
                 </Elements>
               )}

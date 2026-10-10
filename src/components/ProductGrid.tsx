@@ -23,6 +23,7 @@ function ProductGridCard({ product }: { product: Product }) {
       image: product.image,
       price: product.price,
       salePrice: sp,
+      shippingIncluded: product.freeShipping ?? false,
     })
     openCart()
   }

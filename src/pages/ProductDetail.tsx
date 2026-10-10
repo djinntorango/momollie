@@ -146,6 +146,7 @@ export default function ProductDetail() {
       image: product.image,
       price: product.price,
       salePrice,
+      shippingIncluded: product.freeShipping ?? false,
       selections,
     })
     openCart()

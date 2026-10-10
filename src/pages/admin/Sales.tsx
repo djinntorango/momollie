@@ -14,7 +14,7 @@ export default function Sales() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    getProducts()
+    getProducts({ includeInactive: true })
       .then(setProducts)
       .finally(() => setLoading(false))
   }, [])
@@ -32,7 +32,8 @@ export default function Sales() {
   const toggle = (id: string) => {
     setSelected((prev) => {
       const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
       return next
     })
   }

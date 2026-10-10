@@ -33,6 +33,7 @@ export default function ProductCard({ product, categoryName, variant = 'default'
       image: product.image,
       price: product.price,
       salePrice,
+      shippingIncluded: product.freeShipping ?? false,
     })
     openCart()
   }
