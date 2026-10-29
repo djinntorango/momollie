@@ -29,7 +29,18 @@
       "Bash(firebase deploy *)",
       "Bash(firebase functions:delete mergeLabelsPdf --region us-central1 --force)",
       "Bash(git checkout *)",
-      "Bash(git reset *)"
+      "Bash(git reset *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\sspro\\\\mommollie\" -Force)",
+      "Bash(Select-Object Name)",
+      "Bash(npx tsc *)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(npm run *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(gh auth *)",
+      "Bash(npx firebase-tools *)",
+      "Bash(FUNCTIONS_DISCOVERY_TIMEOUT=60 npx firebase-tools deploy --only functions)"
     ],
     "deny": []
   }

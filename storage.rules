@@ -11,5 +11,21 @@ service firebase.storage {
         request.auth.uid == "cUuSeqAN77VkADtHpjX286J0Xm33"
       );
     }
+
+    // Customer embroidery designs and reference images: anyone can upload a new
+    // small image (no overwrites), only admins can delete. Limit matches
+    // MAX_EMBROIDERY_UPLOAD_BYTES in src/lib/embroideryService.ts.
+    // Temporary: a bucket lifecycle rule (storage-lifecycle.json) deletes these
+    // after 14 days. Paid orders' files are copied to orders/{orderId}/ by Cloud
+    // Functions and served via download tokens, so that path needs no rule here.
+    match /embroidery/{fileName} {
+      allow read: if true;
+      allow create: if request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null && (
+        request.auth.uid == "gYhf2cyummQW10nXo6SV8ails833" ||
+        request.auth.uid == "cUuSeqAN77VkADtHpjX286J0Xm33"
+      );
+    }
   }
 }

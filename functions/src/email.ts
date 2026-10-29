@@ -18,6 +18,7 @@ export interface OrderEmailItem {
   quantity: number;
   price: number;
   salePrice?: number;
+  embroideryPreviewUrls?: string[];
 }
 
 export interface OrderConfirmationData {
@@ -75,7 +76,9 @@ function itemRows(items: OrderEmailItem[]) {
       const line = unitPrice * item.quantity;
       return `
         <tr>
-          <td style="padding:10px 0;border-bottom:1px solid #EDE8E1;font-size:14px;color:#2D1F14;">${item.name}</td>
+          <td style="padding:10px 0;border-bottom:1px solid #EDE8E1;font-size:14px;color:#2D1F14;">${item.name}${(item.embroideryPreviewUrls ?? []).map((url, n, all) =>
+    `<br><a href="${url}" style="font-size:12px;color:#9B8778;">View embroidery design${all.length > 1 ? ` ${n + 1}` : ""}</a>`
+  ).join("")}</td>
           <td style="padding:10px 0;border-bottom:1px solid #EDE8E1;font-size:14px;color:#6B5744;text-align:center;">${item.quantity}</td>
           <td style="padding:10px 0;border-bottom:1px solid #EDE8E1;font-size:14px;color:#2D1F14;text-align:right;">${fmt(line)}</td>
         </tr>`;

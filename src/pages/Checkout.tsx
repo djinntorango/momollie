@@ -10,7 +10,8 @@ import {
 } from '@stripe/react-stripe-js'
 import { httpsCallable } from 'firebase/functions'
 import { functions } from '@/lib/firebase'
-import { useCart } from '@/context/CartContext'
+import { useCart, getUnitPrice, getEmbroideryPrice, type CartItemEmbroidery } from '@/context/CartContext'
+import type { EmbroideryDesign } from '@/data/products'
 import { saveMarketingConsent } from '@/lib/marketingService'
 import {
   trackBeginCheckout,
@@ -699,6 +700,17 @@ function CheckoutForm({ paymentIntentId, subtotalCents, allShippingIncluded, car
 
 // ─── Page shell ───────────────────────────────────────────────────────────────
 
+// The server prices embroidery and attaches the mockup from the product itself, so send only the design
+function toEmbroideryDesign(e: CartItemEmbroidery): EmbroideryDesign {
+  return {
+    previewUrl: e.previewUrl,
+    threadColors: e.threadColors,
+    ...(e.text ? { text: e.text, font: e.font } : {}),
+    ...(e.notes ? { notes: e.notes } : {}),
+    ...(e.referenceUrl ? { referenceUrl: e.referenceUrl } : {}),
+  }
+}
+
 export default function Checkout() {
   const { items, subtotal } = useCart()
   const navigate = useNavigate()
@@ -710,7 +722,7 @@ export default function Checkout() {
   const gaItems: GaItem[] = items.map((i) => ({
     item_id: i.productId,
     item_name: i.name,
-    price: i.salePrice ?? i.price,
+    price: getUnitPrice(i),
     quantity: i.quantity,
   }))
 
@@ -721,7 +733,7 @@ export default function Checkout() {
     }
 
     const createPI = httpsCallable<
-      { items: Array<{ productId: string; quantity: number; selections?: { productId: string }[] }> },
+      { items: Array<{ productId: string; quantity: number; selections?: { productId: string; embroidery?: EmbroideryDesign }[]; embroidery?: EmbroideryDesign }> },
       { clientSecret: string; paymentIntentId: string; subtotalCents: number }
     >(functions(), 'createPaymentIntent')
 
@@ -729,7 +741,15 @@ export default function Checkout() {
       items: items.map((i) => ({
         productId: i.productId,
         quantity: i.quantity,
-        ...(i.selections ? { selections: i.selections.map((s) => ({ productId: s.productId })) } : {}),
+        ...(i.selections
+          ? {
+              selections: i.selections.map((s) => ({
+                productId: s.productId,
+                ...(s.embroidery ? { embroidery: toEmbroideryDesign(s.embroidery) } : {}),
+              })),
+            }
+          : {}),
+        ...(i.embroidery ? { embroidery: toEmbroideryDesign(i.embroidery) } : {}),
       })),
     })
       .then((result) => {
@@ -784,9 +804,9 @@ export default function Checkout() {
               <h2 className="text-lg font-semibold text-[#3E2C1F] mb-4">Order summary</h2>
               <ul className="space-y-3 mb-4">
                 {items.map((item) => {
-                  const displayPrice = item.salePrice !== null ? item.salePrice : item.price
+                  const displayPrice = getUnitPrice(item)
                   return (
-                    <li key={item.productId} className="flex gap-3 items-start">
+                    <li key={item.cartItemId} className="flex gap-3 items-start">
                       <div className="relative flex-shrink-0">
                         <div className="w-14 h-14 rounded-lg overflow-hidden bg-[#F5E6D3]">
                           <img
@@ -805,6 +825,9 @@ export default function Checkout() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-[#3E2C1F] leading-tight">{item.name}</p>
+                        {getEmbroideryPrice(item) > 0 && (
+                          <p className="text-xs text-[#9B8B7E] mt-0.5">+ Custom embroidery</p>
+                        )}
                       </div>
                       <span className="text-sm font-semibold text-[#3E2C1F] flex-shrink-0">
                         ${(displayPrice * item.quantity).toFixed(2)}

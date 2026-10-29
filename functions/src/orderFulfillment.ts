@@ -1,5 +1,6 @@
 import * as admin from "firebase-admin";
 import {sendOrderConfirmation, sendNewOrderAlert} from "./email.js";
+import {EmbroideryDesign} from "./embroidery.js";
 
 interface FirestoreProduct {
   stockQty?: number;
@@ -10,6 +11,8 @@ interface OrderItem {
   name: string;
   quantity: number;
   price: number;
+  embroidery?: EmbroideryDesign;
+  selections?: Array<{slotLabel: string; productName: string; embroidery?: EmbroideryDesign}>;
 }
 
 interface OrderCustomer {
@@ -90,7 +93,18 @@ export async function sendOrderEmails(
   const emailTo = orderData.customer?.email ?? fallbackEmail;
   const nameFor = orderData.customer?.name ?? "";
   const addrFor = orderData.customer?.address;
-  const items = (orderData.items ?? []).map((i) => ({name: i.name, quantity: i.quantity, price: i.price}));
+  const items = (orderData.items ?? []).map((i) => {
+    const designUrls = [
+      ...(i.embroidery ? [i.embroidery.previewUrl] : []),
+      ...(i.selections ?? []).flatMap((sel) => sel.embroidery ? [sel.embroidery.previewUrl] : []),
+    ];
+    return {
+      name: designUrls.length > 0 ? `${i.name} (custom embroidery)` : i.name,
+      quantity: i.quantity,
+      price: i.price,
+      ...(designUrls.length > 0 ? {embroideryPreviewUrls: designUrls} : {}),
+    };
+  });
   const address = {
     line1: addrFor?.line1 ?? "",
     ...(addrFor?.line2 ? {line2: addrFor.line2} : {}),

@@ -8,6 +8,40 @@ export interface BundleSlot {
   productIds: string[]; // flat product IDs the customer can pick from for this slot
 }
 
+/** Region of a mockup image the design is stitched into, as fractions (0–1) of the image size. */
+export interface PrintArea {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** A product photo customers design on top of, Redbubble-style. */
+export interface EmbroideryMockup {
+  imageUrl: string;
+  aspect: number;          // image naturalWidth / naturalHeight
+  printArea: PrintArea;
+}
+
+/** A customer-designed embroidery request attached to a cart/order line. */
+export interface EmbroideryDesign {
+  previewUrl: string;      // design PNG; transparent and cropped to the print area when a mockup is used
+  text?: string;
+  font?: string;
+  threadColors: string[];  // hex colors used in the design
+  notes?: string;          // free-form instructions from the customer
+  referenceUrl?: string;   // optional customer-uploaded reference image
+  mockup?: EmbroideryMockup; // snapshot of the mockup the design was placed on
+}
+
+export interface OrderItemSelection {
+  slotLabel: string;
+  productId: string;
+  productName: string;
+  embroidery?: EmbroideryDesign;
+  embroideryPrice?: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -21,6 +55,10 @@ export interface Product {
   features: string[];
   bestSeller?: boolean;
   freeShipping?: boolean;
+  embroideryEnabled?: boolean; // customers can design a custom embroidery for this listing
+  embroideryPrice?: number;    // add-on fee per item, not affected by salePercent
+  embroideryNote?: string;     // guidance shown to customers (design area, turnaround, etc.)
+  embroideryMockup?: EmbroideryMockup | null; // null = no mockup, design on plain fabric
   listingType?: 'bundle'; // absent or undefined = flat listing
   slots?: BundleSlot[];   // only for bundle listings
   image: string;           // primary image URL — kept for cart/backward compat
@@ -89,6 +127,9 @@ export interface Order {
     salePrice?: number;
     quantity: number;
     weightLb?: number;
+    selections?: OrderItemSelection[]; // bundle slot choices
+    embroidery?: EmbroideryDesign;
+    embroideryPrice?: number; // total embroidery add-on per unit (incl. bundle slots); already included in price
   }>;
   subtotal: number;
   total: number;

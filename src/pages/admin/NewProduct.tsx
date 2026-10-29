@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { createProduct } from '@/lib/productService'
 import ProductForm, { type ProductFormData } from './ProductForm'
 import { useLang } from '@/context/LangContext'
+import { embroideryFieldsToProduct } from './EmbroiderySettings'
 
 export default function NewProduct() {
   const navigate = useNavigate()
@@ -31,6 +32,7 @@ export default function NewProduct() {
       bestSeller: data.bestSeller || undefined,
       freeShipping: data.freeShipping || undefined,
       stockQty: data.stockQty !== '' ? parseInt(data.stockQty) : undefined,
+      ...embroideryFieldsToProduct(data),
       etsyUrl: data.etsyUrl || undefined,
       image: validImages[0]?.url ?? '',
       images: validImages,

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getProduct, getProducts } from '@/lib/productService'
-import type { Product } from '@/data/products'
+import type { EmbroideryDesign, EmbroideryMockup, Product } from '@/data/products'
 import { useCart } from '@/context/CartContext'
 import type { CartItemSelection } from '@/context/CartContext'
 import SaleCountdown from '@/components/SaleCountdown'
+import EmbroideryDesigner, { EMPTY_DRAFT, type EmbroideryDraft } from '@/components/EmbroideryDesigner'
+import EmbroideryPreview from '@/components/EmbroideryPreview'
 
 function getYouTubeId(url: string): string | null {
   const watchMatch = url.match(/[?&]v=([^&]+)/)
@@ -53,6 +55,45 @@ function JsonLd({ product }: { product: Product }) {
   )
 }
 
+// A design is attached either to the whole listing ('main') or to one bundle slot
+const MAIN_TARGET = 'main'
+const slotTarget = (i: number) => `slot-${i}`
+
+function EmbroideryChoice({ design, price, compact, onDesign, onRemove }: {
+  design?: EmbroideryDesign
+  price: number
+  compact?: boolean
+  onDesign: () => void
+  onRemove: () => void
+}) {
+  if (!design) {
+    return (
+      <button
+        type="button"
+        onClick={onDesign}
+        className={compact
+          ? 'text-sm text-amber-700 hover:text-amber-800 font-medium'
+          : 'shrink-0 px-4 py-2 rounded-xl border border-amber-500 text-amber-700 text-sm font-semibold hover:bg-amber-100 transition-colors'}
+      >
+        {compact ? `+ Add custom embroidery (+$${price.toFixed(2)})` : 'Design it'}
+      </button>
+    )
+  }
+  return (
+    <div className="flex items-center gap-3">
+      <EmbroideryPreview design={design} className={`${compact ? 'w-14 h-14' : 'w-20 h-20'} rounded-lg border border-amber-200 bg-white`} />
+      <div className="flex-1 min-w-0 text-sm">
+        <p className="font-medium text-gray-800">Embroidery added · +${price.toFixed(2)}</p>
+        {design.text && <p className="text-gray-600 truncate">“{design.text}”</p>}
+        <div className="flex gap-3 mt-1">
+          <button type="button" onClick={onDesign} className="text-amber-700 hover:text-amber-800 font-medium">Edit</button>
+          <button type="button" onClick={onRemove} className="text-gray-500 hover:text-red-600">Remove</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>()
   const [product, setProduct] = useState<Product | null>(null)
@@ -65,6 +106,10 @@ export default function ProductDetail() {
   // Flat products available for bundle slot choices
   const [slotProducts, setSlotProducts] = useState<Record<string, Product>>({})
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
+  // Embroidery, keyed by target (MAIN_TARGET or slotTarget(i))
+  const [designerTarget, setDesignerTarget] = useState<string | null>(null)
+  const [drafts, setDrafts] = useState<Record<string, EmbroideryDraft>>({})
+  const [designs, setDesigns] = useState<Record<string, EmbroideryDesign>>({})
   const { addItem, openCart } = useCart()
 
   useEffect(() => {
@@ -73,6 +118,9 @@ export default function ProductDetail() {
         .then(async (p) => {
           if (!p) { setNotFound(true); return }
           setProduct(p)
+          // A design belongs to the product it was made for
+          setDesigns({})
+          setDrafts({})
           const all = await getProducts()
           setRelatedProducts(all.filter((prod) => prod.id !== id))
           if (p.listingType === 'bundle' && p.slots?.length) {
@@ -127,17 +175,51 @@ export default function ProductDetail() {
   const slots = product.slots ?? []
   const allSlotsFilled = !isBundle || slots.every((_, i) => slotSelections[i] !== undefined)
 
+  const embroideryPrice = product.embroideryEnabled && typeof product.embroideryPrice === 'number'
+    ? product.embroideryPrice
+    : null
+
+  // Bundle slots use the chosen bag's mockup, falling back to the bundle's own
+  const mockupFor = (target: string, selections = slotSelections): EmbroideryMockup | undefined => {
+    if (target === MAIN_TARGET) return product.embroideryMockup ?? undefined
+    const slotIdx = Number(target.slice('slot-'.length))
+    return selections[slotIdx]?.embroideryMockup ?? product.embroideryMockup ?? undefined
+  }
+
+  const removeDesign = (target: string) =>
+    setDesigns((prev) => {
+      const next = { ...prev }
+      delete next[target]
+      return next
+    })
+
+  const activeDesigns = embroideryPrice === null
+    ? []
+    : isBundle
+      ? slots.map((_, i) => designs[slotTarget(i)]).filter(Boolean)
+      : [designs[MAIN_TARGET]].filter(Boolean)
+  const embroideryTotal = embroideryPrice !== null ? activeDesigns.length * embroideryPrice : 0
+
   const handleAddToCart = () => {
     let selections: CartItemSelection[] | undefined
     let cartItemId = product.id
     if (isBundle && slots.length > 0) {
-      selections = slots.map((slot, i) => ({
-        slotLabel: slot.label,
-        productId: slotSelections[i]?.id ?? '',
-        productName: slotSelections[i]?.name ?? '',
-      }))
+      selections = slots.map((slot, i) => {
+        const design = embroideryPrice !== null ? designs[slotTarget(i)] : undefined
+        return {
+          slotLabel: slot.label,
+          productId: slotSelections[i]?.id ?? '',
+          productName: slotSelections[i]?.name ?? '',
+          ...(design && embroideryPrice !== null ? { embroidery: { ...design, price: embroideryPrice } } : {}),
+        }
+      })
       // Unique key per combination so different selections = separate cart line
       cartItemId = product.id + '::' + selections.map((s) => s.productId).join(':')
+    }
+    const mainDesign = !isBundle && embroideryPrice !== null ? designs[MAIN_TARGET] : undefined
+    if (activeDesigns.length > 0) {
+      // Every custom design is its own cart line
+      cartItemId += '::embroidery:' + Date.now()
     }
     addItem({
       cartItemId,
@@ -148,7 +230,12 @@ export default function ProductDetail() {
       salePrice,
       shippingIncluded: product.freeShipping ?? false,
       selections,
+      ...(mainDesign && embroideryPrice !== null
+        ? { embroidery: { ...mainDesign, price: embroideryPrice } }
+        : {}),
     })
+    setDesigns({})
+    setDrafts({})
     openCart()
   }
 
@@ -334,7 +421,11 @@ export default function ProductDetail() {
                         value={slotSelections[i]?.id ?? ''}
                         onChange={(e) => {
                           const chosen = eligibleProducts.find((p) => p.id === e.target.value)
-                          setSlotSelections((prev) => ({ ...prev, [i]: chosen! }))
+                          const nextSelections = { ...slotSelections, [i]: chosen! }
+                          if (mockupFor(slotTarget(i))?.imageUrl !== mockupFor(slotTarget(i), nextSelections)?.imageUrl) {
+                            removeDesign(slotTarget(i))
+                          }
+                          setSlotSelections(nextSelections)
                         }}
                         className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 text-gray-800"
                       >
@@ -343,9 +434,56 @@ export default function ProductDetail() {
                           <option key={p.id} value={p.id}>{p.name}</option>
                         ))}
                       </select>
+                      {embroideryPrice !== null && slotSelections[i] && (
+                        <div className="mt-2">
+                          <EmbroideryChoice
+                            compact
+                            price={embroideryPrice}
+                            design={designs[slotTarget(i)]}
+                            onDesign={() => setDesignerTarget(slotTarget(i))}
+                            onRemove={() => removeDesign(slotTarget(i))}
+                          />
+                        </div>
+                      )}
                     </div>
                   )
                 })}
+                {embroideryPrice !== null && (
+                  <p className="text-xs text-gray-500">
+                    Any bag in this bundle can be embroidered with your own design. Choose a bag first, then add embroidery.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Custom embroidery (flat listings; bundles customize per slot above) */}
+            {embroideryPrice !== null && !isBundle && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="font-semibold text-gray-900">Custom embroidery</h2>
+                    <p className="text-sm text-gray-600">
+                      Design your own stitched name, message, or doodle. +${embroideryPrice.toFixed(2)} per bag.
+                    </p>
+                  </div>
+                  {!designs[MAIN_TARGET] && (
+                    <EmbroideryChoice
+                      price={embroideryPrice}
+                      onDesign={() => setDesignerTarget(MAIN_TARGET)}
+                      onRemove={() => removeDesign(MAIN_TARGET)}
+                    />
+                  )}
+                </div>
+                {designs[MAIN_TARGET] && (
+                  <div className="mt-3">
+                    <EmbroideryChoice
+                      price={embroideryPrice}
+                      design={designs[MAIN_TARGET]}
+                      onDesign={() => setDesignerTarget(MAIN_TARGET)}
+                      onRemove={() => removeDesign(MAIN_TARGET)}
+                    />
+                  </div>
+                )}
               </div>
             )}
 
@@ -360,7 +498,13 @@ export default function ProductDetail() {
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 }`}
               >
-                {!product.inStock ? 'Out of Stock' : !allSlotsFilled ? 'Select All Options' : 'Add to Cart'}
+                {!product.inStock
+                  ? 'Out of Stock'
+                  : !allSlotsFilled
+                    ? 'Select All Options'
+                    : embroideryTotal > 0
+                      ? `Add to Cart — $${((salePrice ?? product.price) + embroideryTotal).toFixed(2)}`
+                      : 'Add to Cart'}
               </button>
             </div>
 
@@ -417,6 +561,34 @@ export default function ProductDetail() {
 
         </div>
       </div>
+      {embroideryPrice !== null && designerTarget && (
+        <EmbroideryDesigner
+          key={designerTarget}
+          open
+          productName={
+            designerTarget === MAIN_TARGET
+              ? product.displayTitle ?? product.name
+              : slotSelections[Number(designerTarget.slice('slot-'.length))]?.name ?? product.name
+          }
+          price={embroideryPrice}
+          note={product.embroideryNote}
+          mockup={mockupFor(designerTarget)}
+          draft={drafts[designerTarget] ?? EMPTY_DRAFT}
+          onDraftChange={(action) => {
+            const target = designerTarget
+            setDrafts((prev) => {
+              const current = prev[target] ?? EMPTY_DRAFT
+              return { ...prev, [target]: typeof action === 'function' ? action(current) : action }
+            })
+          }}
+          onClose={() => setDesignerTarget(null)}
+          onSave={(design) => {
+            const target = designerTarget
+            setDesigns((prev) => ({ ...prev, [target]: design }))
+            setDesignerTarget(null)
+          }}
+        />
+      )}
     </>
   )
 }

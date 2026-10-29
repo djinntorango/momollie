@@ -1,13 +1,19 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
+import type { EmbroideryDesign } from '@/data/products'
 
 export interface CartItemSelection {
   slotLabel: string
   productId: string
   productName: string
+  embroidery?: CartItemEmbroidery
+}
+
+export interface CartItemEmbroidery extends EmbroideryDesign {
+  price: number        // add-on fee per item at the time it was added
 }
 
 export interface CartItem {
-  cartItemId: string   // flat items: productId; bundles: productId + slot hash
+  cartItemId: string   // flat items: productId; bundles: productId + slot hash; embroidered: unique per design
   productId: string
   name: string
   image: string
@@ -16,6 +22,19 @@ export interface CartItem {
   quantity: number
   shippingIncluded: boolean
   selections?: CartItemSelection[]
+  embroidery?: CartItemEmbroidery
+}
+
+/** Embroidery add-on per unit, including any customized bundle slots. */
+export function getEmbroideryPrice(item: CartItem): number {
+  const slots = (item.selections ?? []).reduce((sum, s) => sum + (s.embroidery?.price ?? 0), 0)
+  return (item.embroidery?.price ?? 0) + slots
+}
+
+/** Per-unit price including any sale and embroidery add-on. */
+export function getUnitPrice(item: CartItem): number {
+  const base = item.salePrice !== null ? item.salePrice : item.price
+  return base + getEmbroideryPrice(item)
 }
 
 interface CartContextValue {
@@ -97,10 +116,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0)
 
-  const subtotal = items.reduce((sum, i) => {
-    const unitPrice = i.salePrice !== null ? i.salePrice : i.price
-    return sum + unitPrice * i.quantity
-  }, 0)
+  const subtotal = items.reduce((sum, i) => sum + getUnitPrice(i) * i.quantity, 0)
 
   return (
     <CartContext.Provider

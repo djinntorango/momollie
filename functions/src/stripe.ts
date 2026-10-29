@@ -5,6 +5,7 @@ import * as admin from "firebase-admin";
 import {getShippingRateOptions, ShippoAddress} from "./shippoClient.js";
 import {resendApiKey, sendOrderConfirmation, sendNewOrderAlert} from "./email.js";
 import {claimOrderForFulfillment, decrementStockForOrder, sendOrderEmails, OrderData} from "./orderFulfillment.js";
+import {persistOrderEmbroidery} from "./embroidery.js";
 
 import {isAdmin} from "./config.js";
 
@@ -358,10 +359,12 @@ export const stripeWebhook = onRequest(
         if (claimed && orderData) {
           const items = orderData.items ?? [];
           await decrementStockForOrder(db, items);
+          const persistedItems = await persistOrderEmbroidery(db, orderId, items);
 
           // Merge in the customer info we just wrote, since orderData is from before the update
           const mergedOrderData: OrderData = {
             ...orderData,
+            items: persistedItems,
             customer: (baseUpdate.customer as OrderData["customer"] | undefined) ?? orderData.customer,
           };
           await sendOrderEmails(resendApiKey.value(), orderId, mergedOrderData, pi.receipt_email ?? "");

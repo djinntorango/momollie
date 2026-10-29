@@ -2,8 +2,9 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { httpsCallable } from 'firebase/functions'
 import { functions } from '@/lib/firebase'
 import { subscribeOrders, updateOrder, updateOrderAddress } from '@/lib/orderService'
-import type { Order } from '@/data/products'
+import type { EmbroideryDesign, Order } from '@/data/products'
 import { useLang } from '@/context/LangContext'
+import EmbroideryPreview from '@/components/EmbroideryPreview'
 
 const STATUS_COLORS: Record<Order['status'], string> = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -586,6 +587,49 @@ function CopyEmailButton({ email }: { email: string }) {
   )
 }
 
+
+function EmbroideryDetails({ embroidery, price }: { embroidery: EmbroideryDesign; price?: number }) {
+  const { t } = useLang()
+  return (
+    <div className="mt-2 mb-1 flex gap-3 p-2 bg-purple-50 border border-purple-100 rounded-lg">
+      <a href={embroidery.previewUrl} target="_blank" rel="noopener noreferrer" className="flex-shrink-0">
+        <EmbroideryPreview design={embroidery} className="w-20 h-20 rounded border border-purple-200 bg-white" />
+      </a>
+      <div className="text-xs text-[#6B5B4F] space-y-0.5 min-w-0">
+        <p className="font-semibold text-purple-700">
+          {t('orders.embroideryLabel', { price: (price ?? 0).toFixed(2) })}
+        </p>
+        {embroidery.text && (
+          <p><span className="font-medium">{t('orders.embroideryText')}</span> “{embroidery.text}”</p>
+        )}
+        {embroidery.font && (
+          <p><span className="font-medium">{t('orders.embroideryFont')}</span> {embroidery.font}</p>
+        )}
+        {embroidery.threadColors.length > 0 && (
+          <p className="flex items-center gap-1">
+            <span className="font-medium">{t('orders.embroideryColors')}</span>
+            {embroidery.threadColors.map((c) => (
+              <span key={c} title={c} className="inline-block w-3.5 h-3.5 rounded-full border border-gray-300" style={{ backgroundColor: c }} />
+            ))}
+          </p>
+        )}
+        {embroidery.notes && (
+          <p className="whitespace-pre-wrap break-words"><span className="font-medium">{t('orders.embroideryNotes')}</span> {embroidery.notes}</p>
+        )}
+        <p className="flex gap-3 pt-0.5">
+          <a href={embroidery.previewUrl} target="_blank" rel="noopener noreferrer" className="text-[#E8B55F] underline">
+            {t('orders.embroideryDesign')}
+          </a>
+          {embroidery.referenceUrl && (
+            <a href={embroidery.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-[#E8B55F] underline">
+              {t('orders.embroideryReference')}
+            </a>
+          )}
+        </p>
+      </div>
+    </div>
+  )
+}
 
 function AddressStatusBadge({ order }: { order: Order }) {
   const { t } = useLang()
@@ -1477,6 +1521,11 @@ export default function AdminOrders() {
                           count: order.items.reduce((s, i) => s + i.quantity, 0),
                           plural: order.items.reduce((s, i) => s + i.quantity, 0) !== 1 ? 's' : '',
                         })}
+                        {order.items.some((i) => i.embroidery || i.selections?.some((sel) => sel.embroidery)) && (
+                          <span className="ml-1.5 inline-flex px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 text-[10px] font-semibold align-middle">
+                            {t('orders.embroideryBadge')}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <div className="font-semibold text-[#3E2C1F]">${order.total.toFixed(2)}</div>
@@ -1673,11 +1722,24 @@ export default function AdminOrders() {
                               <h4 className="font-semibold text-[#3E2C1F] mb-2">{t('orders.itemsSection')}</h4>
                               <ul className="text-sm text-[#6B5B4F] space-y-1">
                                 {order.items.map((item, idx) => (
-                                  <li key={idx} className="flex justify-between gap-4">
-                                    <span className="flex-1">{item.name} × {item.quantity}</span>
-                                    <span className="font-medium text-[#3E2C1F]">
-                                      ${((item.salePrice ?? item.price) * item.quantity).toFixed(2)}
-                                    </span>
+                                  <li key={idx}>
+                                    <div className="flex justify-between gap-4">
+                                      <span className="flex-1">{item.name} × {item.quantity}</span>
+                                      <span className="font-medium text-[#3E2C1F]">
+                                        ${((item.salePrice ?? item.price) * item.quantity).toFixed(2)}
+                                      </span>
+                                    </div>
+                                    {item.embroidery && <EmbroideryDetails embroidery={item.embroidery} price={item.embroideryPrice} />}
+                                    {item.selections && item.selections.length > 0 && (
+                                      <ul className="mt-1 ml-3 space-y-1 text-xs">
+                                        {item.selections.map((sel, sIdx) => (
+                                          <li key={sIdx}>
+                                            <span className="text-[#9B8B7E]">{sel.slotLabel}:</span> {sel.productName}
+                                            {sel.embroidery && <EmbroideryDetails embroidery={sel.embroidery} price={sel.embroideryPrice} />}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    )}
                                   </li>
                                 ))}
                               </ul>

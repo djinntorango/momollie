@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
-import { useCart } from '@/context/CartContext'
+import { useCart, getUnitPrice, getEmbroideryPrice } from '@/context/CartContext'
+import EmbroideryPreview from '@/components/EmbroideryPreview'
 
 export default function CartDrawer() {
   const { items, isOpen, closeCart, removeItem, updateQuantity, subtotal } = useCart()
@@ -63,7 +64,7 @@ export default function CartDrawer() {
           ) : (
             <ul className="space-y-4">
               {items.map((item) => {
-                const displayPrice = item.salePrice !== null ? item.salePrice : item.price
+                const displayPrice = getUnitPrice(item)
                 return (
                   <li key={item.cartItemId} className="flex gap-4 py-3 border-b border-[#F5E6D3] last:border-0">
                     <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-[#F5E6D3]">
@@ -83,14 +84,26 @@ export default function CartDrawer() {
                           {item.selections.map((s, i) => (
                             <li key={i} className="text-xs text-[#9B8B7E]">
                               {s.slotLabel}: {s.productName}
+                              {s.embroidery && (
+                                <span className="inline-flex items-center gap-1 ml-1 align-middle">
+                                  <EmbroideryPreview design={s.embroidery} className="w-6 h-6 rounded border border-[#F5E6D3]" />
+                                  embroidered +${s.embroidery.price.toFixed(2)}
+                                </span>
+                              )}
                             </li>
                           ))}
                         </ul>
                       )}
+                      {item.embroidery && (
+                        <div className="mt-1 flex items-center gap-2">
+                          <EmbroideryPreview design={item.embroidery} className="w-8 h-8 rounded border border-[#F5E6D3]" />
+                          <span className="text-xs text-[#9B8B7E]">Custom embroidery +${item.embroidery.price.toFixed(2)}</span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-2 mt-1">
                         <span className="font-bold text-[#E8B55F]">${displayPrice.toFixed(2)}</span>
                         {item.salePrice !== null && (
-                          <span className="text-xs text-[#9B8B7E] line-through">${item.price.toFixed(2)}</span>
+                          <span className="text-xs text-[#9B8B7E] line-through">${(item.price + getEmbroideryPrice(item)).toFixed(2)}</span>
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-2">

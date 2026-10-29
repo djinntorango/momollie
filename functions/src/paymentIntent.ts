@@ -6,6 +6,13 @@ import {getShippingRateOptions, ShippoAddress, PACKAGING, PACKAGING_TARE_LB} fro
 import {applyPromoCode} from "./promoCode.js";
 import {resendApiKey} from "./email.js";
 import {claimOrderForFulfillment, decrementStockForOrder, sendOrderEmails} from "./orderFulfillment.js";
+import {
+  EmbroideryDesign,
+  assertEmbroideryUploadsExist,
+  mockupFromProduct,
+  parseEmbroideryDesign,
+  persistOrderEmbroidery,
+} from "./embroidery.js";
 
 const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
 const shippoApiKey = defineSecret("SHIPPO_API_KEY");
@@ -16,7 +23,8 @@ const ALLOWED_ORIGINS = ["https://momollie.web.app", "https://dearmomollie.com",
 interface CheckoutItem {
   productId: string;
   quantity: number;
-  selections?: { productId: string }[];  // bundle slot selections
+  selections?: { productId: string; embroidery?: unknown }[];  // bundle slot selections
+  embroidery?: unknown;  // customer design, validated by parseEmbroideryDesign
 }
 
 interface FirestoreProduct {
@@ -28,6 +36,18 @@ interface FirestoreProduct {
   stockQty?: number;
   weightLb?: number;
   freeShipping?: boolean;
+  embroideryEnabled?: boolean;
+  embroideryPrice?: number;
+  embroideryMockup?: unknown;
+  slots?: {label: string; productIds: string[]}[];
+}
+
+interface OrderItemSelection {
+  slotLabel: string;
+  productId: string;
+  productName: string;
+  embroidery?: EmbroideryDesign;
+  embroideryPrice?: number;
 }
 
 interface FirestoreSettings {
@@ -63,7 +83,11 @@ export const createPaymentIntent = onCall(
       quantity: number;
       weightLb: number;
       freeShipping: boolean;
+      selections?: OrderItemSelection[];
+      embroidery?: EmbroideryDesign;
+      embroideryPrice?: number;
     }> = [];
+    const designs: EmbroideryDesign[] = [];
 
     for (const item of items) {
       const snap = await db.collection("products").doc(item.productId).get();
@@ -78,9 +102,50 @@ export const createPaymentIntent = onCall(
         throw new HttpsError("failed-precondition", `"${product.name}" is out of stock`);
       }
 
-      const unitPrice = product.salePercent
+      const basePrice = product.salePercent
         ? product.price * (1 - product.salePercent / 100)
         : product.price;
+
+      // Embroidery fee and mockup come from the product (never the client) and aren't discounted by sales
+      const embroideryAvailable = product.embroideryEnabled === true && typeof product.embroideryPrice === "number";
+      const parseFor = (raw: unknown, mockupSource?: unknown): EmbroideryDesign => {
+        if (!embroideryAvailable) {
+          throw new HttpsError("failed-precondition", `Custom embroidery is no longer available for "${product.name}"`);
+        }
+        const design = parseEmbroideryDesign(raw);
+        const mockup = mockupFromProduct(mockupSource) ?? mockupFromProduct(product.embroideryMockup);
+        if (mockup) design.mockup = mockup;
+        designs.push(design);
+        return design;
+      };
+
+      let embroidery: EmbroideryDesign | undefined;
+      if (item.embroidery !== undefined) {
+        embroidery = parseFor(item.embroidery);
+      }
+
+      // Bundle slots: record what was chosen, and any per-bag embroidery (mockup from the chosen bag)
+      const selSnaps = item.selections && item.selections.length > 0 ?
+        await Promise.all(item.selections.map((sel) => db.collection("products").doc(sel.productId).get())) :
+        [];
+      const selections: OrderItemSelection[] = selSnaps.map((selSnap, i) => {
+        const sel = item.selections![i];
+        const selProduct = selSnap.data() as FirestoreProduct | undefined;
+        if (!selProduct) {
+          throw new HttpsError("not-found", "A selected bundle item is no longer available");
+        }
+        const selEmbroidery = sel.embroidery !== undefined ? parseFor(sel.embroidery, selProduct.embroideryMockup) : undefined;
+        return {
+          slotLabel: product.slots?.[i]?.label ?? `Item ${i + 1}`,
+          productId: sel.productId,
+          productName: selProduct.name,
+          ...(selEmbroidery ? {embroidery: selEmbroidery, embroideryPrice: product.embroideryPrice} : {}),
+        };
+      });
+
+      const embroideredCount = (embroidery ? 1 : 0) + selections.filter((sel) => sel.embroidery).length;
+      const embroideryPrice = embroideredCount > 0 ? embroideredCount * product.embroideryPrice! : undefined;
+      const unitPrice = basePrice + (embroideryPrice ?? 0);
 
       // For bundles with slot selections, sum the actual selected products' weights.
       // For flat products, use the product's own weightLb.
@@ -88,10 +153,7 @@ export const createPaymentIntent = onCall(
       let resolvedWeightLb: number;
       if (isFreeShipping) {
         resolvedWeightLb = product.weightLb ?? 0;
-      } else if (item.selections && item.selections.length > 0) {
-        const selSnaps = await Promise.all(
-          item.selections.map((sel) => db.collection("products").doc(sel.productId).get())
-        );
+      } else if (selSnaps.length > 0) {
         resolvedWeightLb = selSnaps.reduce((sum, selSnap) => {
           const selProduct = selSnap.data() as FirestoreProduct | undefined;
           if (!selProduct?.weightLb) {
@@ -120,8 +182,15 @@ export const createPaymentIntent = onCall(
         quantity: item.quantity,
         weightLb: resolvedWeightLb,
         freeShipping: isFreeShipping,
+        ...(selections.length > 0 ? {selections} : {}),
+        ...(embroidery ? {embroidery} : {}),
+        ...(embroideryPrice ? {embroideryPrice} : {}),
       });
     }
+
+    // Uploads in embroidery/ are auto-deleted after a while (storage-lifecycle.json),
+    // so a design that sat in a cart too long has to be re-saved
+    await Promise.all(designs.map(assertEmbroideryUploadsExist));
 
     const subtotalCents = Math.round(
       orderItems.reduce((s, i) => s + i.price * i.quantity, 0) * 100
@@ -437,8 +506,10 @@ export const completeOrder = onCall(
 
     if (orderData) {
       await decrementStockForOrder(db, orderData.items ?? []);
+      const items = await persistOrderEmbroidery(db, orderId, orderData.items ?? []);
       const mergedOrderData = {
         ...orderData,
+        items,
         customer: (updateData.customer as typeof orderData.customer | undefined) ?? orderData.customer,
       };
       await sendOrderEmails(resendApiKey.value(), orderId, mergedOrderData, pi.receipt_email ?? "");

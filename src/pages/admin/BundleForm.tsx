@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import type { Product, ProductImage, BundleSlot } from '@/data/products'
 import { getProducts, uploadProductImage } from '@/lib/productService'
 import { useLang } from '@/context/LangContext'
+import EmbroiderySettings, { toEmbroideryFormFields, type EmbroideryFormFields } from './EmbroiderySettings'
 
-export interface BundleFormData {
+export interface BundleFormData extends EmbroideryFormFields {
   name: string
   price: string
   description: string
@@ -44,6 +45,7 @@ function toFormData(p?: Product): BundleFormData {
     etsyUrl: p?.etsyUrl ?? '',
     slots: p?.slots?.length ? p.slots : [{ label: '', productIds: [] }],
     weightLb: 0,  // computed at submit from flatProducts
+    ...toEmbroideryFormFields(p),
   }
 }
 
@@ -209,6 +211,10 @@ export default function BundleForm({ initial, onSubmit, submitLabel }: BundleFor
     const validSlots = form.slots.filter((s) => s.label.trim() && s.productIds.length > 0)
     if (validSlots.length === 0) {
       setError('At least one slot with a label and at least one product is required.')
+      return
+    }
+    if (form.embroideryEnabled && !form.embroideryPrice) {
+      setError(t('form.errEmbroideryPrice'))
       return
     }
     const weightLb = computeWeight(validSlots)
@@ -471,6 +477,14 @@ export default function BundleForm({ initial, onSubmit, submitLabel }: BundleFor
           </div>
         )}
       </div>
+
+      {/* Custom embroidery */}
+      <EmbroiderySettings
+        value={form}
+        onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
+        images={form.images}
+        isBundle
+      />
 
       {/* Etsy URL */}
       <div>

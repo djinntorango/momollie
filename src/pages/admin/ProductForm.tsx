@@ -3,8 +3,9 @@ import type { Product, ProductImage } from '@/data/products'
 import { uploadProductImage } from '@/lib/productService'
 import { categories } from '@/data/products'
 import { useLang } from '@/context/LangContext'
+import EmbroiderySettings, { toEmbroideryFormFields, type EmbroideryFormFields } from './EmbroiderySettings'
 
-export interface ProductFormData {
+export interface ProductFormData extends EmbroideryFormFields {
   name: string
   displayTitle: string
   category: string
@@ -65,6 +66,7 @@ function toFormData(p?: Product): ProductFormData {
     bestSeller: p?.bestSeller ?? false,
     freeShipping: p?.freeShipping ?? false,
     stockQty: p?.stockQty !== undefined ? String(p.stockQty) : '',
+    ...toEmbroideryFormFields(p),
     etsyUrl: p?.etsyUrl ?? '',
     images,
     videoUrl: p?.videoUrl ?? '',
@@ -213,6 +215,10 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
       setError(t('form.errDimensions'))
       return
     }
+    if (form.embroideryEnabled && !form.embroideryPrice) {
+      setError(t('form.errEmbroideryPrice'))
+      return
+    }
     setSaving(true)
     setError('')
     try {
@@ -307,6 +313,13 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
           className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E8B55F] text-gray-800"
         />
       </div>
+
+      {/* Custom embroidery */}
+      <EmbroiderySettings
+        value={form}
+        onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
+        images={form.images}
+      />
 
       {/* Description */}
       <div>

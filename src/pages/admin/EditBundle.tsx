@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { getProduct, updateProduct } from '@/lib/productService'
 import type { Product } from '@/data/products'
 import BundleForm, { type BundleFormData } from './BundleForm'
+import { embroideryFieldsToProduct } from './EmbroiderySettings'
 import { useLang } from '@/context/LangContext'
 
 export default function EditBundle() {
@@ -38,6 +39,7 @@ export default function EditBundle() {
       weightLb,
       listingType: 'bundle',
       slots: data.slots,
+      ...embroideryFieldsToProduct(data),
     })
     navigate('/admin/listings')
   }

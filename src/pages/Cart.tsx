@@ -1,15 +1,22 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { httpsCallable } from 'firebase/functions'
 import { functions } from '@/lib/firebase'
-import { useCart } from '@/context/CartContext'
+import { useCart, getUnitPrice, getEmbroideryPrice } from '@/context/CartContext'
+import EmbroideryPreview from '@/components/EmbroideryPreview'
 
 export default function Cart() {
   const { items, removeItem, updateQuantity, subtotal, clearCart } = useCart()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const navigate = useNavigate()
 
   const handleCheckout = async () => {
+    // Hosted Stripe Checkout doesn't know about embroidery add-ons; use the on-site checkout
+    if (items.some((i) => getEmbroideryPrice(i) > 0)) {
+      navigate('/checkout')
+      return
+    }
     setLoading(true)
     setError(null)
     try {
@@ -61,7 +68,7 @@ export default function Cart() {
         <div className="bg-white rounded-2xl shadow-md overflow-hidden mb-6">
           <ul className="divide-y divide-[#F5E6D3]">
             {items.map((item) => {
-              const displayPrice = item.salePrice !== null ? item.salePrice : item.price
+              const displayPrice = getUnitPrice(item)
               return (
                 <li key={item.cartItemId} className="flex gap-4 p-5">
                   <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-[#F5E6D3]">
@@ -78,10 +85,27 @@ export default function Cart() {
 
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-[#3E2C1F] leading-tight">{item.name}</p>
+                    {item.embroidery && (
+                      <div className="mt-1 flex items-center gap-2">
+                        <EmbroideryPreview design={item.embroidery} className="w-10 h-10 rounded border border-[#F5E6D3]" />
+                        <span className="text-sm text-[#9B8B7E]">Custom embroidery +${item.embroidery.price.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {item.selections?.map((sel, i) => (
+                      <div key={i} className="mt-1 flex items-center gap-2 text-sm text-[#9B8B7E]">
+                        <span>{sel.slotLabel}: {sel.productName}</span>
+                        {sel.embroidery && (
+                          <>
+                            <EmbroideryPreview design={sel.embroidery} className="w-8 h-8 rounded border border-[#F5E6D3]" />
+                            <span>embroidered +${sel.embroidery.price.toFixed(2)}</span>
+                          </>
+                        )}
+                      </div>
+                    ))}
                     <div className="flex items-center gap-2 mt-1">
                       <span className="font-bold text-[#E8B55F] text-lg">${displayPrice.toFixed(2)}</span>
                       {item.salePrice !== null && (
-                        <span className="text-sm text-[#9B8B7E] line-through">${item.price.toFixed(2)}</span>
+                        <span className="text-sm text-[#9B8B7E] line-through">${(item.price + getEmbroideryPrice(item)).toFixed(2)}</span>
                       )}
                     </div>
 

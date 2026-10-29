@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { createProduct } from '@/lib/productService'
 import BundleForm, { type BundleFormData } from './BundleForm'
+import { embroideryFieldsToProduct } from './EmbroiderySettings'
 import { useLang } from '@/context/LangContext'
 
 export default function NewBundle() {
@@ -27,6 +28,7 @@ export default function NewBundle() {
       weightLb,
       listingType: 'bundle',
       slots: data.slots,
+      ...embroideryFieldsToProduct(data),
     })
     navigate('/admin/listings')
   }

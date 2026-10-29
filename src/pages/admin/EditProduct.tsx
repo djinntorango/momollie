@@ -4,6 +4,7 @@ import { getProduct, updateProduct } from '@/lib/productService'
 import type { Product } from '@/data/products'
 import ProductForm, { type ProductFormData } from './ProductForm'
 import { useLang } from '@/context/LangContext'
+import { embroideryFieldsToProduct } from './EmbroiderySettings'
 
 export default function EditProduct() {
   const navigate = useNavigate()
@@ -45,6 +46,7 @@ export default function EditProduct() {
       bestSeller: data.bestSeller || undefined,
       freeShipping: data.freeShipping || undefined,
       stockQty: data.stockQty !== '' ? parseInt(data.stockQty) : undefined,
+      ...embroideryFieldsToProduct(data),
       etsyUrl: data.etsyUrl || undefined,
       image: validImages[0]?.url ?? '',
       images: validImages,
