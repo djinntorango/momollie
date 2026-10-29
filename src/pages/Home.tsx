@@ -7,7 +7,7 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative min-h-[600px] md:min-h-[700px] flex items-center overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <img src="/hero.png" alt="Handcrafted beeswax bread bags and kitchen accessories" className="absolute inset-0 w-full h-full object-cover" />
+          <img src="/hero.jpg" alt="Handcrafted beeswax bread bags and kitchen accessories" className="absolute inset-0 w-full h-full object-cover" />
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-[#FFFBF5]/40 via-[#FFF8E7]/50 to-[#F5E6D3]/75 z-10"></div>
         <div className="container mx-auto px-4 relative z-20">

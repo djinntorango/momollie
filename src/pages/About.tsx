@@ -6,7 +6,7 @@ export default function AboutPage() {
       {/* Hero Section */}
       <section className="mb-16">
         <div className="relative h-96 w-full mb-8 rounded-2xl overflow-hidden">
-          <img src="/hero.png" alt="Dear Momollie handcrafted beeswax bread bags made in Denton, Texas" className="absolute inset-0 w-full h-full object-cover" />
+          <img src="/hero.jpg" alt="Dear Momollie handcrafted beeswax bread bags made in Denton, Texas" className="absolute inset-0 w-full h-full object-cover" />
         </div>
         <h1 className="text-5xl font-bold text-center mb-6 text-[#3E2C1F]">About Dear Momollie</h1>
         <p className="text-xl text-[#6B5B4F] text-center max-w-3xl mx-auto leading-relaxed">
@@ -43,7 +43,7 @@ export default function AboutPage() {
             </p>
           </div>
           <div className="relative h-96 rounded-2xl overflow-hidden shadow-xl">
-            <img src="/bag.png" alt="Handcrafted beeswax bread bag made in Denton Texas" className="absolute inset-0 w-full h-full object-cover" />
+            <img src="/beeswax.jpg" alt="Handcrafted beeswax bread bag made in Denton Texas" className="absolute inset-0 w-full h-full object-cover" />
           </div>
         </div>
       </section>

@@ -13,7 +13,7 @@ export default function CaringForBeeswaxBags() {
           </div>
         </div>
         <div className="relative h-96 w-full rounded-lg overflow-hidden">
-          <img src="/bag.png" alt="Well-maintained beeswax bread bag" className="absolute inset-0 w-full h-full object-cover" />
+          <img src="/beeswax.jpg" alt="Well-maintained beeswax bread bag" className="absolute inset-0 w-full h-full object-cover" />
         </div>
       </header>
 

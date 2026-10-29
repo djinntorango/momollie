@@ -20,7 +20,7 @@ export default function BeeswaxBreadStorageBenefits() {
           </div>
         </div>
         <div className="relative h-96 w-full rounded-lg overflow-hidden">
-          <img src="/bag.png" alt="Fresh bread stored in a beeswax-lined bag" className="absolute inset-0 w-full h-full object-cover" />
+          <img src="/beeswax.jpg" alt="Fresh bread stored in a beeswax-lined bag" className="absolute inset-0 w-full h-full object-cover" />
         </div>
       </header>
 
