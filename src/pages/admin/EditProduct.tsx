@@ -47,6 +47,7 @@ export default function EditProduct() {
       freeShipping: data.freeShipping || undefined,
       stockQty: data.stockQty !== '' ? parseInt(data.stockQty) : undefined,
       ...embroideryFieldsToProduct(data),
+      active: data.active,
       etsyUrl: data.etsyUrl || undefined,
       image: validImages[0]?.url ?? '',
       images: validImages,

@@ -2,9 +2,11 @@ import { useState, useEffect, useRef } from 'react'
 import type { Product, ProductImage, BundleSlot } from '@/data/products'
 import { getProducts, uploadProductImage } from '@/lib/productService'
 import { useLang } from '@/context/LangContext'
+import VisibilitySettings from './VisibilitySettings'
 import EmbroiderySettings, { toEmbroideryFormFields, type EmbroideryFormFields } from './EmbroiderySettings'
 
 export interface BundleFormData extends EmbroideryFormFields {
+  active: boolean           // false = hidden from the shop, still reachable by direct link
   name: string
   price: string
   description: string
@@ -46,6 +48,7 @@ function toFormData(p?: Product): BundleFormData {
     slots: p?.slots?.length ? p.slots : [{ label: '', productIds: [] }],
     weightLb: 0,  // computed at submit from flatProducts
     ...toEmbroideryFormFields(p),
+    active: p?.active !== false,
   }
 }
 
@@ -247,6 +250,9 @@ export default function BundleForm({ initial, onSubmit, submitLabel }: BundleFor
           className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E8B55F] text-gray-800"
         />
       </div>
+
+      {/* Visibility */}
+      <VisibilitySettings active={form.active} onChange={(v) => set('active', v)} productId={initial?.id} />
 
       {/* In Stock + Stock Qty */}
       <div className="flex items-center gap-6">

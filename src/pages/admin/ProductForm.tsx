@@ -3,9 +3,11 @@ import type { Product, ProductImage } from '@/data/products'
 import { uploadProductImage } from '@/lib/productService'
 import { categories } from '@/data/products'
 import { useLang } from '@/context/LangContext'
+import VisibilitySettings from './VisibilitySettings'
 import EmbroiderySettings, { toEmbroideryFormFields, type EmbroideryFormFields } from './EmbroiderySettings'
 
 export interface ProductFormData extends EmbroideryFormFields {
+  active: boolean           // false = hidden from the shop, still reachable by direct link
   name: string
   displayTitle: string
   category: string
@@ -67,6 +69,7 @@ function toFormData(p?: Product): ProductFormData {
     freeShipping: p?.freeShipping ?? false,
     stockQty: p?.stockQty !== undefined ? String(p.stockQty) : '',
     ...toEmbroideryFormFields(p),
+    active: p?.active !== false,
     etsyUrl: p?.etsyUrl ?? '',
     images,
     videoUrl: p?.videoUrl ?? '',
@@ -258,6 +261,9 @@ export default function ProductForm({ initial, onSubmit, submitLabel }: ProductF
         />
         <p className="mt-1 text-xs text-gray-400">{t('form.displayTitleHint')}</p>
       </div>
+
+      {/* Visibility */}
+      <VisibilitySettings active={form.active} onChange={(v) => set('active', v)} productId={initial?.id} />
 
       {/* Category + In Stock + Stock Qty */}
       <div className="grid grid-cols-2 gap-4">

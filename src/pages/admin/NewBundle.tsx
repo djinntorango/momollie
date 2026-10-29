@@ -29,6 +29,7 @@ export default function NewBundle() {
       listingType: 'bundle',
       slots: data.slots,
       ...embroideryFieldsToProduct(data),
+      active: data.active,
     })
     navigate('/admin/listings')
   }

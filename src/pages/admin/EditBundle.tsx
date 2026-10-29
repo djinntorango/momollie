@@ -40,6 +40,7 @@ export default function EditBundle() {
       listingType: 'bundle',
       slots: data.slots,
       ...embroideryFieldsToProduct(data),
+      active: data.active,
     })
     navigate('/admin/listings')
   }

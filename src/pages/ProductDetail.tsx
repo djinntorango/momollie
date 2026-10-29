@@ -138,7 +138,18 @@ export default function ProductDetail() {
     if (product) {
       document.title = `${product.name} — Dear Momollie`
     }
-    return () => { document.title = 'Dear Momollie' }
+    // Hidden listings are reachable by direct link for testing; keep them out of search results
+    let robots: HTMLMetaElement | null = null
+    if (product?.active === false) {
+      robots = document.createElement('meta')
+      robots.name = 'robots'
+      robots.content = 'noindex, nofollow'
+      document.head.appendChild(robots)
+    }
+    return () => {
+      document.title = 'Dear Momollie'
+      robots?.remove()
+    }
   }, [product])
 
   if (fetching) {
@@ -243,6 +254,11 @@ export default function ProductDetail() {
     <>
       <JsonLd product={product} />
       <div className="max-w-6xl mx-auto px-4 py-8">
+        {product.active === false && (
+          <div className="mb-6 px-4 py-3 rounded-xl bg-amber-50 border border-amber-300 text-sm text-amber-800">
+            <strong>Hidden listing.</strong> This product isn't shown in the shop. Only people with this link can see it.
+          </div>
+        )}
         {/* Breadcrumb */}
         <nav className="text-sm text-gray-500 mb-6 flex items-center gap-2">
           <Link to="/products" className="hover:text-amber-600 transition-colors">Products</Link>
